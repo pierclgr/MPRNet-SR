@@ -214,7 +214,8 @@ def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
 
 def create_patches_batch(batch: list) -> tuple:
     """
-    Collate function for the patches dataset to create a batch of patches
+    Collate function for the patches dataset to create a batch of patches. Selects randomly a scale between the ones
+    used in the dataset and extracts the corresponding scaled batch.
 
     :param batch: batch containing the items extracted from the used dataset (list)
     :return: tuple containing the scale, the lr and the hr patches batches
@@ -239,15 +240,10 @@ def create_patches_batch(batch: list) -> tuple:
 d = PatchesDataset("../data/div2k/train")
 dload = data.DataLoader(d, batch_size=3, shuffle=False, collate_fn=create_patches_batch)
 
-# print(type(dload))
-# d.scale = 2
 
 for scale, lr, hr in dload:
-    print(lr)
-    print(type(lr))
+    print(scale)
     print(lr.size())
 
-    print(hr)
-    print(type(lr))
     print(hr.size())
     break
