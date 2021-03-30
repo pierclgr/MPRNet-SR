@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 import numpy as np
 import random
+from tqdm.auto import tqdm
 
 
 class PatchesDataset(data.Dataset):
@@ -186,7 +187,7 @@ def random_horizontal_flip(lr: np.ndarray, hr: np.ndarray, p: float = .5) -> tup
         lr = np.fliplr(lr)
         hr = np.fliplr(hr)
 
-    return lr, hr
+    return lr.copy(), hr.copy()
 
 
 def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
@@ -205,7 +206,7 @@ def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
     lr = np.rot90(lr, n_rotations)
     hr = np.rot90(hr, n_rotations)
 
-    return lr, hr
+    return lr.copy(), hr.copy()
 
 
 def create_patches_batch(batch: list) -> tuple:
@@ -234,9 +235,8 @@ def create_patches_batch(batch: list) -> tuple:
 
 
 d = PatchesDataset("../data/div2k/train")
-dload = data.DataLoader(d, batch_size=64, shuffle=False, collate_fn=create_patches_batch)
+dload = data.DataLoader(d, batch_size=64, shuffle=False, collate_fn=create_patches_batch, num_workers=4,
+                        pin_memory=True)
 
-for scale, lr, hr in dload:
-    print(scale)
-    print(lr.size())
-    print(hr.size())
+for scale, lr, hr in tqdm(dload):
+    pass
