@@ -101,29 +101,25 @@ class PatchesDataset(data.Dataset):
             hr_im.close()
             del hr_im
 
-        # create the dictionary containing lr file names for each scale
-        lr_file_names = {scale: f"{file_name}x{scale}{file_extension}" for scale in self.scales}
-
         # create the dictionary containing the lr images paths for each scale
-        lr_image_paths = {scale: self.lr_path / self.degradation / f"x{scale}" / file_name for scale, file_name in
-                          lr_file_names.items()}
+        lr_image_paths = {scale: self.lr_path / self.degradation / f"x{scale}" / f"{file_name}x{scale}{file_extension}"
+                          for scale in self.scales}
 
         # create dictionary containing lr images for each scale
         lr_images = {}
 
         # extract the lr images
         for scale, lr_image_path in lr_image_paths.items():
-            with open(lr_image_path, "rb") as image_file:
-                # open lr image file as PIL image
-                lr_im = Image.open(image_file)
-                lr_im = lr_im.convert("RGB")
+            # open lr image file as PIL image
+            lr_im = Image.open(lr_image_path)
+            lr_im = lr_im.convert("RGB")
 
-                # convert image to PyTorch tensor
-                lr = np.asarray(lr_im)
+            # convert image to PyTorch tensor
+            lr = np.asarray(lr_im)
 
-                # close image
-                lr_im.close()
-                del lr_im
+            # close image
+            lr_im.close()
+            del lr_im
 
             # add current lr image to the dictionary
             lr_images[scale] = lr
@@ -190,7 +186,7 @@ def random_horizontal_flip(lr: np.ndarray, hr: np.ndarray, p: float = .5) -> tup
         lr = np.fliplr(lr)
         hr = np.fliplr(hr)
 
-    return lr.copy(), hr.copy()
+    return lr, hr
 
 
 def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
@@ -209,7 +205,7 @@ def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
     lr = np.rot90(lr, n_rotations)
     hr = np.rot90(hr, n_rotations)
 
-    return lr.copy(), hr.copy()
+    return lr, hr
 
 
 def create_patches_batch(batch: list) -> tuple:
@@ -238,12 +234,9 @@ def create_patches_batch(batch: list) -> tuple:
 
 
 d = PatchesDataset("../data/div2k/train")
-dload = data.DataLoader(d, batch_size=3, shuffle=False, collate_fn=create_patches_batch)
-
+dload = data.DataLoader(d, batch_size=64, shuffle=False, collate_fn=create_patches_batch)
 
 for scale, lr, hr in dload:
     print(scale)
     print(lr.size())
-
     print(hr.size())
-    break
