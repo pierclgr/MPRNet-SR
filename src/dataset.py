@@ -8,6 +8,7 @@ import os
 import numpy as np
 import random
 from tqdm.auto import tqdm
+import time
 
 
 class PatchesDataset(data.Dataset):
@@ -235,8 +236,12 @@ def create_patches_batch(batch: list) -> tuple:
 
 
 d = PatchesDataset("../data/div2k/train")
-dload = data.DataLoader(d, batch_size=64, shuffle=False, collate_fn=create_patches_batch, num_workers=4,
+dload = data.DataLoader(d, batch_size=16, shuffle=False, collate_fn=create_patches_batch, num_workers=2,
                         pin_memory=True)
 
+start = time.time()
 for scale, lr, hr in tqdm(dload):
     pass
+end = time.time()
+
+print(end - start)
