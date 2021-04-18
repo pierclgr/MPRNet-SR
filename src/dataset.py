@@ -8,39 +8,23 @@ import os
 import numpy as np
 import random
 from tqdm.auto import tqdm
+import h5py
 import time
+import zipfile
 
 
-class PatchesDataset(data.Dataset):
+class PatchesDatasetH5(data.Dataset):
     """
-    PyTorch dataset loading DIV2K HR and LR images from a folder
+    PyTorch dataset loading DIV2K HR and LR images from a h5 file
     """
 
-    def __init__(self, path: str, image_format: str = "png", scales: list = None, degradation: str = "bicubic",
-                 patch_size: int = 64, augment: bool = True) -> None:
+    def __init__(self, zip_file_path: str, image_format: str = "png", scales: list = None, split: str = "train",
+                 degradation: str = "bicubic", patch_size: int = 64, augment: bool = True) -> None:
         """
-        Constructor of the class
-
-        :param path: path of the dataset folder (str)
-        :param image_format: format of the image files (str, default "png")
-        :param scales: list of scales to use (list, default None)
-        :param degradation: degradation to use (str, default "bicubic")
-        :param patch_size: size of the patches (int, default 64)
-        :param augment: flag to control the augmentation of the data (bool, default True)
+        TODO
         """
 
-        # set dataset folder path
-        self.dataset_path = Path(path)
-
-        # set HR folder path
-        self.hr_path = self.dataset_path / "hr"
-
-        # set LR folder path
-        self.lr_path = self.dataset_path / "lr"
-
-        # extract file names
-        file_list = list(self.hr_path.glob(f"*.{image_format}"))
-        self.file_list = [os.path.basename(file) for file in file_list]
+        super(PatchesDatasetH5, self).__init__()
 
         # define scales to use
         if not scales:
@@ -48,17 +32,69 @@ class PatchesDataset(data.Dataset):
         else:
             self.scales = scales
 
+        scales_check = [f"x{scale}" for scale in self.scales]
+
         # define degradation method to use
-        self.degradation = degradation
+        self.degradation = degradation.lower()
 
         # define patch size
         self.patch_size = patch_size
+
+        # define split
+        self.split = split.lower()
 
         # define to tensor function
         self.to_tensor = T.ToTensor()
 
         # define augmentation
         self.augment = augment
+
+        image_format = image_format.lower()
+
+        # get parent path
+        parent_path = os.path.dirname(os.path.abspath(zip_file_path))
+
+        # get zip file name
+        zip_file_name = os.path.splitext(os.path.basename(os.path.abspath(zip_file_path)))[0]
+
+        # define the hdf5 folder path
+        hdf5_folder = os.path.join(parent_path, zip_file_name)
+
+        # if folder does not exist
+        if not os.path.exists(os.path.join(parent_path, zip_file_name)):
+            filenames = []
+        else:
+            # extract file name list
+            _, _, filenames = next(os.walk(hdf5_folder))
+
+        # if hr file is missing for the chosen split, create it
+        if not any('_hr' in filename and split in filename for filename in filenames):
+            create_div2k_h5_file(zip_file_path, split=self.split, quality="hr", image_format=image_format)
+
+        # create the missing lr scaled files
+        for scale in scales_check:
+            if not any(split in filename and scale in filename and self.degradation in filename for filename in
+                       filenames):
+                create_div2k_h5_file(zip_file_path, split=self.split, quality="lr", degradation=self.degradation,
+                                     scale=scale, image_format=image_format)
+
+        # set the dataset folder path
+        self.dataset_path = Path(hdf5_folder)
+
+        # open the hr hdf5 file
+        self.hr_file = h5py.File(os.path.join(self.dataset_path, f"{self.split}_hr.hdf5"), 'r')
+
+        # open the lr hdf5 files
+        self.lr_files = {
+            scale: h5py.File(os.path.join(self.dataset_path, f"{self.split}_lr_{self.degradation}_x{scale}.hdf5"), 'r')
+            for scale in self.scales}
+
+        # check if the files contain the same number of images
+        if any(len(file.keys()) != len(self.hr_file.keys()) for _, file in self.lr_files.items()):
+            raise Exception("HR and LR files does not contain the same number of images.")
+
+        # define file_names
+        self.file_list = list(self.hr_file.keys())
 
     def __len__(self) -> int:
         """
@@ -71,76 +107,130 @@ class PatchesDataset(data.Dataset):
 
     def __getitem__(self, item) -> tuple:
         """
-        Method to get a patch from an image in the dataset. It returns a tuple containing a tuple for each scale.
-        Each scale tuple contains, in order:
-            - the scale
-            - the lr patch as PyTorch tensor
-            - the hr patch as PyTorch tensor
-
-        :param item: index of the item to get
-        :return: tuple containing hr and lr patches couples for each scale
+        TODO
         """
 
         # select file
         file = self.file_list[item]
 
-        # separate file name and extension
-        file_name, file_extension = os.path.splitext(file)
+        # extract hr image
+        hr = np.asarray(self.hr_file[file])
 
-        # extract hr image path
-        hr_image_path = self.hr_path / file
-
-        # open the hr file
-        with open(hr_image_path, "rb") as image_file:
-            # open hr image file as a PIL Image
-            hr_im = Image.open(image_file)
-            hr_im = hr_im.convert("RGB")
-
-            # convert image to numpy array and save
-            hr = np.asarray(hr_im)
-
-            # close image and delete to free space
-            hr_im.close()
-            del hr_im
-
-        # create the dictionary containing the lr images paths for each scale
-        lr_image_paths = {scale: self.lr_path / self.degradation / f"x{scale}" / f"{file_name}x{scale}{file_extension}"
-                          for scale in self.scales}
-
-        # create dictionary containing lr images for each scale
-        lr_images = {}
+        output_tuple = ()
 
         # extract the lr images
-        for scale, lr_image_path in lr_image_paths.items():
-            # open lr image file as PIL image
-            lr_im = Image.open(lr_image_path)
-            lr_im = lr_im.convert("RGB")
-
+        for scale, lr_file in self.lr_files.items():
             # convert image to PyTorch tensor
-            lr = np.asarray(lr_im)
+            lr = np.asarray(lr_file[f'{file}x{scale}'])
 
-            # close image
-            lr_im.close()
-            del lr_im
+            # extract the lr and hr patches
+            lr_patch, hr_patch = random_crop(lr, hr, scale)
 
-            # add current lr image to the dictionary
-            lr_images[scale] = lr
+            # if augmentation is required
+            if self.augment:
+                # flip the patches
+                lr_patch, hr_patch = random_horizontal_flip(lr_patch, hr_patch)
 
-        # extract the lr-hr patches for each scale
-        lr_hr_patches = {scale: random_crop(cur_lr, hr, scale) for scale, cur_lr in lr_images.items()}
+                # rotate the patches
+                lr_patch, hr_patch = random_90_rotation(lr_patch, hr_patch)
 
-        # if agumentation is required
-        if self.augment:
-            # flip the patches
-            lr_hr_patches = {scale: random_horizontal_flip(lr_patch, hr_patch) for scale, (lr_patch, hr_patch) in
-                             lr_hr_patches.items()}
+            output_tuple += (scale, self.to_tensor(lr_patch), self.to_tensor(hr_patch))
 
-            # rotate the patches
-            lr_hr_patches = {scale: random_90_rotation(lr_patch, hr_patch) for scale, (lr_patch, hr_patch) in
-                             lr_hr_patches.items()}
+        return output_tuple
 
-        # extract and return lr-hr patches pairs for each scale as PyTorch tensors
-        return tuple((scale, self.to_tensor(lr), self.to_tensor(hr)) for scale, (lr, hr) in lr_hr_patches.items())
+
+def create_div2k_h5_file(zip_file_path: str, split: str = "train", degradation: str = "bicubic",
+                         scale: str = "x2", quality: str = "lr", image_format: str = "png") -> None:
+    """
+    TODO
+    """
+
+    if quality.lower() == "lr":
+        print(f"\nCreating {quality} {degradation} {scale} hdf5 file (it may take a while)...")
+    else:
+        print(f"\nCreating {quality} hdf5 file (it may take a while)...")
+
+    # open the zip file
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
+
+        # get parent path
+        parent_path = os.path.dirname(os.path.abspath(zip_file.filename))
+
+        # get zip file name
+        zip_file_name = os.path.splitext(os.path.basename(os.path.abspath(zip_file.filename)))[0]
+
+        # if hdf5 directory does not exists, create it
+        if not os.path.exists(os.path.join(parent_path, zip_file_name)):
+            os.makedirs(os.path.join(parent_path, zip_file_name))
+            print("Hdf5 directory created.")
+
+        # get all the files in the zip
+        files_and_folders = zip_file.namelist()
+
+        # filter the filenames using the specified parameters
+        extracted_files = [file for file in files_and_folders if
+                           split.lower() in file and
+                           quality.lower() in file and
+                           f".{image_format.lower()}" in file]
+
+        # if the quality is lr, filter by also using degradation and scale
+        if quality.lower() == "lr":
+            extracted_files = [file for file in extracted_files if
+                               degradation.lower() in file and
+                               scale.lower() in file]
+
+        # sort extracted file names
+        extracted_files.sort()
+
+        # define output file name
+        if quality.lower() == "lr":
+            output_file_name = f"{split}_{quality}_{degradation}_{scale}.hdf5"
+        else:
+            output_file_name = f"{split}_{quality}.hdf5"
+
+        # open the output file
+        with h5py.File(os.path.join(os.path.join(parent_path, zip_file_name, output_file_name)),
+                       "w") as output_file:
+
+            # for each image file extracted
+            for file in tqdm(extracted_files, total=len(extracted_files)):
+                img_file = zip_file.open(file)
+                image = Image.open(img_file)
+
+                # convert image to numpy array
+                img = np.asarray(image)
+
+                # close image and delete to free space
+                image.close()
+                del image
+
+                # extract the name of the file from the path
+                image_file_name = os.path.splitext(os.path.basename(file))[0].lower()
+
+                # save the image on the hdf5 dataset
+                output_file.create_dataset(image_file_name, data=img)
+
+    print("Done!")
+
+
+def collate_fn(batch: list) -> tuple:
+    """
+    TODO
+    """
+
+    # unzip the batch
+    unzipped = list(zip(*batch))
+
+    # choose a random scale from the ones given for the current batch
+    starting_sub_index = random.randint(0, int(len(unzipped) / 3) - 1) * 3
+    scale = unzipped[starting_sub_index][0]
+
+    # stack the hr and lr batches into a unique PyTorch tensor
+    lr = torch.stack(unzipped[starting_sub_index + 1])
+    hr = torch.stack(unzipped[starting_sub_index + 2])
+
+    # return the batch
+    return scale, lr, hr
 
 
 def random_crop(lr: np.ndarray, hr: np.ndarray, scale: int = 2, patch_size: int = 64) -> tuple:
@@ -210,38 +300,13 @@ def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
     return lr.copy(), hr.copy()
 
 
-def create_patches_batch(batch: list) -> tuple:
-    """
-    Collate function for the patches dataset to create a batch of patches. Selects randomly a scale between the ones
-    used in the dataset and extracts the corresponding scaled batch.
-
-    :param batch: batch containing the items extracted from the used dataset (list)
-    :return: tuple containing the scale, the lr and the hr patches batches
-    """
-
-    # select randomly a scale and it's batch based on the scales contained in the dataset
-    scaled_batch = random.choice(list(zip(*batch)))
-
-    # unzip the scaled batch
-    scale, lr, hr = zip(*scaled_batch)
-
-    # set the scale
-    scale = scale[0]
-
-    # stack the tensor images to a unique batch tensor
-    lr = torch.stack(lr)
-    hr = torch.stack(hr)
-
-    return scale, lr, hr
-
-
-d = PatchesDataset("../data/div2k/train")
-dload = data.DataLoader(d, batch_size=16, shuffle=False, collate_fn=create_patches_batch, num_workers=2,
+ds = PatchesDatasetH5("../data/div2k.zip")
+dload = data.DataLoader(ds, batch_size=16, shuffle=True, collate_fn=collate_fn, num_workers=2,
                         pin_memory=True)
 
 start = time.time()
 for scale, lr, hr in tqdm(dload):
-    pass
+    print(scale, lr.size(), hr.size())
 end = time.time()
 
 print(end - start)
