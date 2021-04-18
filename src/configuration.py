@@ -29,5 +29,3 @@ def get_device() -> str:
     print(f"\n>>> Using {device} device")
 
     return device
-
-get_device()
