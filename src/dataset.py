@@ -26,7 +26,7 @@ class DIV2KPatchesDatasetH5(data.Dataset):
         :param zip_file_path: path of the dataset zip file (str)
         :param image_format: format of the images of the dataset (str, default "png")
         :param scales: list containing the resolution scales to consider (list, default None)
-        :param split: split of the datset to use (str, default "train)
+        :param split: split of the dataset to use (str, default "train")
         :param degradation: type of degraded images to use (str, default "bicubic")
         :param patch_size: size of the square (patch_size x patch_size) lr patches to extract (int, default 64)
         :param augment: flag to control the augmentation of images (bool, default true)
@@ -168,9 +168,9 @@ def create_div2k_h5_file(zip_file_path: str, split: str = "train", degradation: 
     """
 
     if quality.lower() == "lr":
-        print(f"\nCreating {quality} {degradation} {scale} hdf5 file (it may take a while)...")
+        print(f"\nCreating {quality} {degradation} {scale} {split} hdf5 file (it may take a while)...")
     else:
-        print(f"\nCreating {quality} hdf5 file (it may take a while)...")
+        print(f"\nCreating {quality} {split} hdf5 file (it may take a while)...")
 
     # open the zip file
     with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
