@@ -1,4 +1,7 @@
 import os
+import random
+
+import numpy as np
 import torch
 
 
@@ -23,6 +26,30 @@ def get_device() -> torch.device:
     print(f">>> Using {device} device")
 
     return device
+
+
+def set_seeds(seed: int = 1507) -> None:
+    """
+    Method to set the seeds of random components to allow reproducibility
+
+    :param seed: the seed to use, default is 1507 (int)
+
+    :return: the testing environment wrapped with the reproducibility wrapper initialized with the given seed (gym.Env)
+    """
+
+    # set random seed
+    random.seed(seed)
+
+    # set numpy random seed
+    np.random.seed(seed)
+
+    # set pytorch random seed
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.use_deterministic_algorithms(True)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
 def rename() -> None:

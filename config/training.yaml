@@ -1,7 +1,7 @@
 dataset:
   path: /Users/pierclgr/PycharmProjects/ML4CV/data/div2k
   shuffle: true
-  num_dataset_workers: 2
+  num_workers: 2
   pin_memory: true
   split: train
 augmentation:
@@ -13,3 +13,4 @@ augmentation:
   degradation: bicubic
   augment: true
 batch_size: 16
+seed: 1507
