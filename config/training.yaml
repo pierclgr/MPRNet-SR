@@ -1,0 +1,15 @@
+dataset:
+  path: /Users/pierclgr/PycharmProjects/ML4CV/data/div2k
+  shuffle: true
+  num_dataset_workers: 2
+  pin_memory: true
+  split: train
+augmentation:
+  patch_size: 64
+  scales:
+    - 2
+    - 3
+    - 4
+  degradation: bicubic
+  augment: true
+batch_size: 16

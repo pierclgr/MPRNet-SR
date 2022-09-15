@@ -1,4 +1,22 @@
-/data
-/src
-.DS_store
-/.idea
+# ignore raw data
+data/
+
+# macOS files
+.DS_Store
+__MACOSX/
+
+# PyCharm files
+.idea/
+__pycache__
+
+# experimentation stuff
+playbox.py
+
+# wandb
+wandb/
+
+# hydra stuff
+outputs/
+
+# setup.py egg_info
+*.egg-info/
