@@ -12,5 +12,5 @@ augmentation:
     - 4
   degradation: bicubic
   augment: true
-batch_size: 16
+batch_size: 64
 seed: 1507

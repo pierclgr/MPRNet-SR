@@ -4,6 +4,8 @@ import random
 import numpy as np
 import torch
 
+from prettytable import PrettyTable
+
 
 # function to get the current available device (CPU, GPU or TPU)
 def get_device() -> torch.device:
@@ -64,3 +66,16 @@ def rename() -> None:
         old_name = dir + filename
 
         os.rename(old_name, new_name)
+
+
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params += params
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
