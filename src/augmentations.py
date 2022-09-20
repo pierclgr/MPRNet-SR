@@ -26,8 +26,8 @@ def random_crop(lr: np.ndarray, hr: np.ndarray, scale: int = 2, patch_size: int 
     hx, hy = x * scale, y * scale
 
     # extract the patch from the two images
-    lr = lr[y:y + patch_size, x:x + patch_size].copy()
-    hr = hr[hy:hy + hr_patch_size, hx:hx + hr_patch_size].copy()
+    lr = lr[y:y + patch_size, x:x + patch_size]
+    hr = hr[hy:hy + hr_patch_size, hx:hx + hr_patch_size]
 
     return lr, hr
 
@@ -47,7 +47,7 @@ def random_horizontal_flip(lr: np.ndarray, hr: np.ndarray, p: float = .5) -> tup
         lr = np.fliplr(lr)
         hr = np.fliplr(hr)
 
-    return lr.copy(), hr.copy()
+    return lr, hr
 
 
 def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
@@ -66,4 +66,4 @@ def random_90_rotation(lr: np.ndarray, hr: np.ndarray) -> tuple:
     lr = np.rot90(lr, n_rotations)
     hr = np.rot90(hr, n_rotations)
 
-    return lr.copy(), hr.copy()
+    return lr, hr

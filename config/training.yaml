@@ -1,16 +1,37 @@
-dataset:
-  path: /Users/pierclgr/PycharmProjects/ML4CV/data/div2k
+train_dataset:
+  path: /Users/pierclgr/PycharmProjects/ML4CV/data/div2k/train/
   shuffle: true
   num_workers: 2
   pin_memory: true
-  split: train
-augmentation:
-  patch_size: 64
-  scales:
-    - 2
-    - 3
-    - 4
-  degradation: bicubic
+  batch_size: 64
   augment: true
-batch_size: 64
+val_dataset:
+  path: /Users/pierclgr/PycharmProjects/ML4CV/data/div2k/validation
+  shuffle: false
+  num_workers: 1
+  pin_memory: true
+  batch_size: 1
+  augment: false
+degradation: bicubic
+patch_size: 64
+scales:
+  - 2
+  - 3
+  - 4
+image_channels: 3
 seed: 1507
+model: MultiPathResidualNetwork
+loss: L1Loss
+optimizer:
+  name: AdamP
+  learning_rate: 0.001
+  betas:
+    - 0.9
+    - 0.999
+  eps: 0.00000001
+wandb:
+  logging: false # true
+  run_name: MPRNet
+  project_name: ML4CV_project
+  entity_name: pierclgr
+max_training_steps: 3 # 600000

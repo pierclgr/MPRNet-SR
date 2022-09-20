@@ -1,10 +1,9 @@
 import os
 import random
-
 import numpy as np
 import torch
-
 from prettytable import PrettyTable
+import string
 
 
 # function to get the current available device (CPU, GPU or TPU)
@@ -66,6 +65,20 @@ def rename() -> None:
         old_name = dir + filename
 
         os.rename(old_name, new_name)
+
+
+def random_string(chars: str = string.ascii_letters + string.digits, num_char: int = 5) -> str:
+    """
+    Function to create a random string using the given characters
+
+    :param chars: string containing all the possible characters to use for the string generation, default is
+        string.ascii_letters plus string.digits (str)
+    :param num_char: the length of the generated string, default is 5 (int)
+
+    :return: a randomly generated string with the given length (str)
+    """
+
+    return ''.join(random.choice(chars) for _ in range(num_char))
 
 
 def count_parameters(model):
