@@ -1,14 +1,13 @@
 import importlib
+import os
+
 from omegaconf import OmegaConf
 from torch.utils import data
-from src.datasets import TrainDataset, ValDataset
+from src.datasets import TrainDataset
 from src.logger import WandbLogger
 from src.utils import get_device
 from tqdm.auto import tqdm
 import torch
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 class Trainer:
     def __init__(self, config):
@@ -172,6 +171,33 @@ class Trainer:
             val_loss /= val_samples
 
         return val_loss
+
+    def save(self, filename: str):
+        filename = f"{filename}.pt"
+        trained_model_path = self.config.model_folder
+        if not os.path.isdir(trained_model_path):
+            os.makedirs(trained_model_path)
+        file_path = f"{trained_model_path}{filename}.pt"
+
+        print(f"Saving trained model to {filename}.pt...")
+
+        # save network weights
+        checkpoint = {"model_weights", self.model.state_dict()}
+        torch.save(checkpoint, file_path)
+
+    def load(self, filename: str) -> None:
+        filename = f"{filename}.pt"
+        trained_model_path = self.config.model_folder
+        if os.path.isdir(trained_model_path):
+            file_path = f"{trained_model_path}{filename}"
+            if os.path.isfile(file_path):
+                print(f"Loading model from {filename}...")
+                checkpoint = torch.load(file_path, map_location=torch.device("cpu"))
+                self.model.load_state_dict(checkpoint['model_weights'])
+            else:
+                print("The specified file does not exist in the trained models directory.")
+        else:
+            print("The directory of the trained models does not exist.")
 
 # FOR TEST FUNCTION FUTURE
 # return the score

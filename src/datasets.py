@@ -5,6 +5,8 @@ import random
 import torch
 from src.augmentations import random_crop, random_90_rotation, random_horizontal_flip
 import torchvision.transforms as T
+import numpy as np
+import cv2
 
 
 class TrainDataset(data.Dataset):
@@ -124,10 +126,10 @@ class TrainDataset(data.Dataset):
 
 class TestDataset(data.Dataset):
     """
-    PyTorch dataset loading a test dataset of hr and lr images
+    PyTorch dataset loading a test dataset of hr images and creating lr images by degrading
     """
 
-    def __init__(self, dataset_path: str, scales: list = None, degradation: str = "bicubic") -> None:
+    def __init__(self, dataset_path: str, scale: int = 2, degradation: str = "bicubic") -> None:
         """
         Constructor method of the class
 
@@ -141,17 +143,17 @@ class TestDataset(data.Dataset):
         # define dataset path
         self.dataset_path = dataset_path
 
-        # define scales to use if not given
-        if not scales:
-            self.scales = [2, 3, 4]
-        else:
-            self.scales = scales
-
         # define degradation method to use
         self.degradation = degradation.lower()
 
+        # define scales to use
+        if self.degradation == "bicubic":
+            self.scale = scale
+        else:
+            self.scale = 3
+
         # extract the image file names from the dataset
-        self.filenames = sorted(os.listdir(os.path.join(dataset_path, "hr")))
+        self.filenames = sorted(os.listdir(dataset_path))
 
     def __len__(self) -> int:
         """
@@ -173,20 +175,67 @@ class TestDataset(data.Dataset):
         file_name = self.filenames[item]
 
         # extract the HR image from the HR folder
-        hr_image_path = os.path.join(self.dataset_path, "hr", file_name)
+        hr_image_path = os.path.join(self.dataset_path, file_name)
         hr_image = io.imread(hr_image_path)
 
-        # define the output tuple as empty
-        output_tuple = ()
+        # if image is grayscale, add the third dimension (channel)
+        if len(hr_image.shape) < 3:
+            hr_image = np.stack((hr_image,) * 3, axis=-1)
 
-        # extract the LR images from the LR folder
-        for scale in self.scales:
-            # extract the LR image for the current scale from the LR folder
-            lr_image_path = os.path.join(self.dataset_path, "lr", self.degradation, "x" + str(scale),
-                                         file_name)
-            lr_image = io.imread(lr_image_path)
+        lr_image = self.degradate(hr_image)
 
-            # add the current scale_factor-LR-HR triple to the output tuple
-            output_tuple += (scale, T.ToTensor()(lr_image), T.ToTensor()(hr_image))
+        # define the output tuple and return it
+        output_tuple = (self.scale, T.ToTensor()(lr_image.copy()), T.ToTensor()(hr_image.copy()))
 
         return output_tuple
+
+    def degradate(self, image: np.ndarray):
+        # compute the output size of the degradated image
+        height = image.shape[0]
+        width = image.shape[1]
+
+        height = height // self.scale
+        width = width // self.scale
+
+        # apply the degradation module
+        if self.degradation == "bicubic":
+            # if bicubic, just apply a bicubic downsampling to the image
+            degradated_image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+
+        elif self.degradation == "blur_down":
+            # if blur down, first apply a gaussian blur with 7x7 kernel and sigma 1.6 to the image
+            degradated_image = cv2.GaussianBlur(image, ksize=(7, 7), sigmaX=1.6)
+
+            # then, resize the image with bicubic downsampling
+            degradated_image = cv2.resize(degradated_image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+
+        elif self.degradation == "down_noise":
+            # if down noise, first resize the image with bicubic downsampling
+            degradated_image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+
+            # get the height and width of the image
+            height = degradated_image.shape[0]
+            width = degradated_image.shape[1]
+
+            # compute the standard deviation of the image to use it as sigma for the noise
+            sigma = degradated_image.std()
+
+            # generate a gaussian noise array of the size of the image and with variance equal to the std of the image
+            gauss = np.random.normal(0, sigma, (height, width))
+
+            # reduce the noise to 30 % of the total noise
+            percentage = 0.3
+            gauss *= percentage
+
+            # add noise to all the channels of the image
+            noisy = degradated_image + np.stack((gauss,) * 3, axis=-1)
+
+            # clip noisy image min and max to 0 and 255
+            noisy = np.clip(noisy, 0, 255)
+
+            # convert the noisy image to int
+            degradated_image = np.uint8(noisy)
+        else:
+            degradated_image = image
+
+        return degradated_image
