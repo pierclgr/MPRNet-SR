@@ -1,0 +1,17 @@
+test_dataset:
+  path: /Users/pierclgr/PycharmProjects/ML4CV/data/Set5/
+  shuffle: false
+  num_workers: 1
+  pin_memory: true
+  batch_size: 1
+  degradation: bicubic
+  scale: 2
+model: MultiPathResidualNetwork
+model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
+wandb:
+  logging: true
+  run_name: Test_MPRNet_Set5
+  project_name: ML4CV_project
+  entity_name: pierclgr
+seed: 1507
+image_channels: 3

@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+
+import numpy as np
 import wandb
 from src.utils import random_string
 
@@ -39,16 +41,23 @@ class WandbLogger:
         """
         self.logger.finish()
 
-    def log(self, metric: str, value: float, step: int) -> None:
+    def log(self, metric: str, value: float, step: int = None, summary: bool = False) -> None:
         """
         Method that logs the metrics to the define run
 
         :param metric: the metric we're logging (str)
         :param value: the value of the metric we are logging at this time (float)
-        :param step: the current time at which we're logging the metric value (int)
+        :param step: the current time at which we're logging the metric value (int, default None)
 
         :return: None
         """
 
         # log the input metric to the Wandb run
-        self.logger.log({metric: value}, step=step)
+        if summary:
+            wandb.run.summary[metric] = value
+        else:
+            self.logger.log({metric: value}, step=step)
+
+    def log_images(self, images: list, caption: str, name: str, step: int = None):
+        images = [wandb.Image(img, caption=caption) for img in images]
+        self.logger.log({name: images}, step=step)

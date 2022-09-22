@@ -1,13 +1,16 @@
 import importlib
 import os
 
+import numpy as np
 from omegaconf import OmegaConf
 from torch.utils import data
 from src.datasets import TrainDataset
 from src.logger import WandbLogger
+from src.metrics import compute_metrics
 from src.utils import get_device
 from tqdm.auto import tqdm
 import torch
+
 
 class Trainer:
     def __init__(self, config):
@@ -85,6 +88,13 @@ class Trainer:
             # initialize the current epoch metrics
             train_loss = 0
             train_samples = 0
+            train_psnr = 0
+            train_ssim = 0
+            best_train_psnr = 0
+            best_train_ssim = 0
+            best_val_psnr = 0
+            best_val_ssim = 0
+            train_sr_hr_comparisons = []
 
             # for each batch in the training set
             for scale, lrs, hrs in tqdm(self.train_dataloader, position=0):
@@ -92,6 +102,7 @@ class Trainer:
                 # send lr and hr batches to device
                 lrs = lrs.to(self.device)
                 hrs = hrs.to(self.device)
+                batch_size = lrs.size()[0]
 
                 # zero the gradients
                 self.optimizer.zero_grad()
@@ -103,9 +114,20 @@ class Trainer:
                 loss = self.criterion(srs, hrs)
 
                 # add current loss to the training loss
-                batch_size = lrs.size()[0]
                 train_loss += loss.item() * batch_size
                 train_samples += batch_size
+
+                # compute the current training metrics
+                psnr, ssim = compute_metrics(hrs, srs)
+
+                # add metrics of the current batch to the total sum
+                train_psnr += np.sum(psnr)
+                train_ssim += np.sum(ssim)
+
+                # create an image containing the sr and hr image side by side and append to the array of comparison
+                # images
+                sr_hr = np.concatenate((srs[0], hrs[0]), axis=1)
+                train_sr_hr_comparisons.append(sr_hr)
 
                 # do a gradient descent step
                 loss.backward()
@@ -123,18 +145,57 @@ class Trainer:
             # compute the current epoch training loss
             train_loss /= train_samples
 
-            # evaluate the model for each scale at the end of the epoch (when we looped the entire training set)
-            val_loss = self.validate()
+            # compute the average metrics for the current training epoch
+            train_psnr = round(train_psnr / train_samples, 2)
+            train_ssim = round(train_ssim / train_samples, 2)
+
+            # evaluate the model for each scale at the end of the epoch (when we looped the entire training set) and get
+            # the validation loss and metrics
+            val_loss, val_psnr, val_ssim, val_sr_hr_comparisons = self.validate()
+
+            # compute the new best train metrics
+            if train_psnr > best_train_psnr:
+                best_train_psnr = train_psnr
+            if train_ssim > best_train_ssim:
+                best_train_ssim = train_ssim
+
+            # compute the new best validation metrics
+            if val_psnr > best_val_psnr:
+                best_val_psnr = val_psnr
+            if val_ssim > best_val_ssim:
+                best_val_ssim = val_ssim
 
             # print the metrics at the end of the epoch
             print("Epoch:", epochs + 1, "- total_steps:", steps + 1,
+                  "\n\tTRAIN",
                   "\n\t- train loss:", train_loss,
-                  "\n\t- val loss:", val_loss)
+                  "\n\t- train psnr:", train_psnr,
+                  "\n\t- best train psnr:", best_train_psnr,
+                  "\n\t- train ssim:", train_ssim,
+                  "\n\t- best train ssim:", best_train_ssim,
+                  "\n\tVAL",
+                  "\n\t- val loss:", val_loss,
+                  "\n\t- val psnr:", val_psnr,
+                  "\n\t- best val psnr:", best_val_psnr,
+                  "\n\t- val ssim:", val_ssim,
+                  "\n\t- best val ssim:", best_val_ssim)
 
             # log metrics to the logger at each training step if required
             if self.logger:
                 self.logger.log("train_loss", train_loss, epochs)
+                self.logger.log("train_psnr", train_psnr, epochs)
+                self.logger.log("train_ssim", train_ssim, epochs)
+                self.logger.log("best_train_psnr", best_train_psnr, summary=True)
+                self.logger.log("best_train_ssim", best_train_ssim, summary=True)
                 self.logger.log("val_loss", val_loss, epochs)
+                self.logger.log("val_psnr", val_psnr, epochs)
+                self.logger.log("val_ssim", val_ssim, epochs)
+                self.logger.log("best_val_psnr", best_val_psnr, summary=True)
+                self.logger.log("best_val_ssim", best_val_ssim, summary=True)
+                self.logger.log_images(train_sr_hr_comparisons, caption="Left: SR, Right: ground truth (HR)",
+                                       name="Training samples", step=0)
+                self.logger.log_images(val_sr_hr_comparisons, caption="Left: SR, Right: ground truth (HR)",
+                                       name="Validation samples", step=0)
 
             # increment number of epochs
             epochs += 1
@@ -150,27 +211,46 @@ class Trainer:
         # initialize current validation epoch metrics
         val_samples = 0
         val_loss = 0
+        val_psnr = 0
+        val_ssim = 0
+        val_sr_hr_comparisons = []
 
         # disable gradient computation
         with torch.no_grad():
             for scale, lr, hr in tqdm(self.val_dataloader, position=0):
+                # send lr and hr to device
                 lr = lr.to(self.device)
                 hr = hr.to(self.device)
+                batch_size = lr.size()[0]
 
                 # do forward step in the model to compute sr images
                 sr = self.model(lr, scale)
 
                 # compute the validation loss for the current scale
                 loss = self.criterion(sr, hr)
-
-                batch_size = lr.size()[0]
                 val_loss += loss.item() * batch_size
                 val_samples += batch_size
+
+                # comupute psnr and ssim for the current validation sample
+                psnr, ssim = compute_metrics(hr, sr)
+
+                # add metrics of the current batch to the total sum
+                val_psnr += np.sum(psnr)
+                val_ssim += np.sum(ssim)
+
+                # create an image containing the sr and hr image side by side and append to the array of comparison
+                # images
+                sr_hr = np.concatenate((sr[0], hr[0]), axis=1)
+                val_sr_hr_comparisons.append(sr_hr)
 
             # compute the average val loss for the current validation epoch
             val_loss /= val_samples
 
-        return val_loss
+            # compute the average metrics for the current validation epoch
+            val_psnr = round(val_psnr / val_samples, 2)
+            val_ssim = round(val_ssim / val_samples, 2)
+
+        return val_loss, val_psnr, val_ssim, val_sr_hr_comparisons
 
     def save(self, filename: str):
         filename = f"{filename}.pt"
@@ -198,40 +278,3 @@ class Trainer:
                 print("The specified file does not exist in the trained models directory.")
         else:
             print("The directory of the trained models does not exist.")
-
-# FOR TEST FUNCTION FUTURE
-# return the score
-
-
-#     # get each validation sample consisting in the lr and hr images for each scale
-#     for validation_sample in tqdm(self.val_dataloader, position=0):
-#         # get the hr image, which is the last element of the sample, and the chuck containing lr images
-#         hr = validation_sample[-1]
-#         hr = hr.to(self.device)
-#         lr_images = validation_sample[:-1]
-#
-#         # for each scale
-#         for i in range(num_scales):
-#             # get the current scale factor and the lr image
-#             actual_tuple_index = i * 2
-#             scale = lr_images[actual_tuple_index]
-#             scale = scale.item()
-#             lr = lr_images[actual_tuple_index + 1]
-#             lr = lr.to(self.device)
-#
-#             # do forward step in the model to compute sr images
-#             sr = self.model(lr, scale)
-#
-#             # compute the validation loss for the current scale
-#             loss = self.criterion(sr, hr)
-#
-#             # add the loss to the loss corresponding to the current scale
-#             val_losses[scale] += loss.item() * hr.size()[0]
-#
-#         # increment the number of total samples
-#         val_samples += hr.size()[0]
-#
-#     # compute the validation losses for the current epoch
-#     val_losses = {scale: loss/val_samples for scale, loss in val_losses.items()}
-#
-# print(val_losses)

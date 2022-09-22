@@ -32,10 +32,7 @@ optimizer:
 model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
 wandb:
   logging: false # true
-  run_name: MPRNet
+  run_name: Train_MPRNet
   project_name: ML4CV_project
   entity_name: pierclgr
 max_training_steps: 3 # 600000
-
-test_dataset:
-  path: /Users/pierclgr/PycharmProjects/ML4CV/data/Set14/
