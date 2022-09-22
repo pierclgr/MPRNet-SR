@@ -76,7 +76,7 @@ class Trainer:
         epochs = 0
         finished = False
 
-        steps_pbar = tqdm(total=self.config.max_training_steps)
+        steps_pbar = tqdm(total=self.config.max_training_steps, position=0)
 
         # while the training is not finished (i.e. we haven't reached the max number of training steps)
         while not finished:
@@ -204,9 +204,9 @@ class Trainer:
                 self.logger.log("val_ssim", val_ssim, epochs)
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
-                self.logger.log_images(train_sr_hr_comparisons[0:2], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(train_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
                                        name="Training samples", step=0)
-                self.logger.log_images(val_sr_hr_comparisons[0:2], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(val_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
                                        name="Validation samples", step=0)
 
             # increment number of epochs
