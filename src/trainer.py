@@ -10,7 +10,7 @@ from src.metrics import compute_metrics
 from src.utils import get_device, set_seeds
 from tqdm.auto import tqdm
 import torch
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 
 
 class Trainer:
@@ -76,6 +76,8 @@ class Trainer:
         epochs = 0
         finished = False
 
+        steps_pbar = tqdm(total=self.config.max_training_steps)
+
         # while the training is not finished (i.e. we haven't reached the max number of training steps)
         while not finished:
 
@@ -92,7 +94,7 @@ class Trainer:
             best_train_ssim = 0
             best_val_psnr = 0
             best_val_ssim = 0
-            train_sr_hr_comparisons = []
+            sr_hr = np.asarray([])
 
             # for each batch in the training set
             for scale, lrs, hrs in tqdm(self.train_dataloader, position=0):
@@ -129,15 +131,15 @@ class Trainer:
                 # create an image containing the sr and hr image side by side and append to the array of comparison
                 # images
                 sr_hr = np.concatenate((srs[0], hrs[0]), axis=1)
-                train_sr_hr_comparisons.append(sr_hr)
 
                 # do a gradient descent step
                 loss.backward()
-                clip_grad_norm(self.model.parameters(), self.config.clip)
+                clip_grad_norm_(self.model.parameters(), self.config.clip)
                 self.optimizer.step()
 
                 # increment the number of total steps
                 steps += 1
+                steps_pbar.update(1)
 
                 # half learning rate
                 if (steps % self.config.optimizer.halving_steps) == 0:
@@ -201,7 +203,7 @@ class Trainer:
                 self.logger.log("val_ssim", val_ssim, epochs)
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
-                self.logger.log_images(train_sr_hr_comparisons, caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images([sr_hr], caption="Left: SR, Right: ground truth (HR)",
                                        name="Training samples", step=0)
                 self.logger.log_images(val_sr_hr_comparisons, caption="Left: SR, Right: ground truth (HR)",
                                        name="Validation samples", step=0)
@@ -212,6 +214,7 @@ class Trainer:
         print("Training finished! Saving model...")
         self.save(self.config.output_model_file)
         print("Done!")
+        steps_pbar.close()
 
     def validate(self):
         print("Evaluating...")
@@ -224,7 +227,7 @@ class Trainer:
         val_loss = 0
         val_psnr = 0
         val_ssim = 0
-        val_sr_hr_comparisons = []
+        sr_hr = np.asarray([])
 
         # disable gradient computation
         with torch.no_grad():
@@ -256,7 +259,6 @@ class Trainer:
                 # create an image containing the sr and hr image side by side and append to the array of comparison
                 # images
                 sr_hr = np.concatenate((sr[0], hr[0]), axis=1)
-                val_sr_hr_comparisons.append(sr_hr)
 
             # compute the average val loss for the current validation epoch
             val_loss /= val_samples
@@ -265,7 +267,7 @@ class Trainer:
             val_psnr = round(val_psnr / val_samples, 2)
             val_ssim = round(val_ssim / val_samples, 2)
 
-        return val_loss, val_psnr, val_ssim, val_sr_hr_comparisons
+        return val_loss, val_psnr, val_ssim, [sr_hr]
 
     def save(self, filename: str):
         filename = f"{filename}.pt"
