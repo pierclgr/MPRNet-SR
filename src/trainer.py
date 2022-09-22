@@ -205,9 +205,9 @@ class Trainer:
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
                 self.logger.log_images(train_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
-                                       name="Training samples", step=0)
+                                       name="Training samples", step=epochs)
                 self.logger.log_images(val_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
-                                       name="Validation samples", step=0)
+                                       name="Validation samples", step=epochs)
 
             # increment number of epochs
             epochs += 1
