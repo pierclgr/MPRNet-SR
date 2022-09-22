@@ -94,7 +94,7 @@ class Trainer:
             best_train_ssim = 0
             best_val_psnr = 0
             best_val_ssim = 0
-            sr_hr = np.asarray([])
+            train_sr_hr_comparisons = []
 
             # for each batch in the training set
             for scale, lrs, hrs in tqdm(self.train_dataloader, position=0):
@@ -131,6 +131,7 @@ class Trainer:
                 # create an image containing the sr and hr image side by side and append to the array of comparison
                 # images
                 sr_hr = np.concatenate((srs[0], hrs[0]), axis=1)
+                train_sr_hr_comparisons.append(sr_hr)
 
                 # do a gradient descent step
                 loss.backward()
@@ -203,9 +204,9 @@ class Trainer:
                 self.logger.log("val_ssim", val_ssim, epochs)
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
-                self.logger.log_images([sr_hr], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(train_sr_hr_comparisons[0:2], caption="Left: SR, Right: ground truth (HR)",
                                        name="Training samples", step=0)
-                self.logger.log_images(val_sr_hr_comparisons, caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(val_sr_hr_comparisons[0:2], caption="Left: SR, Right: ground truth (HR)",
                                        name="Validation samples", step=0)
 
             # increment number of epochs
@@ -227,7 +228,7 @@ class Trainer:
         val_loss = 0
         val_psnr = 0
         val_ssim = 0
-        sr_hr = np.asarray([])
+        val_sr_hr_comparisons = []
 
         # disable gradient computation
         with torch.no_grad():
@@ -259,6 +260,7 @@ class Trainer:
                 # create an image containing the sr and hr image side by side and append to the array of comparison
                 # images
                 sr_hr = np.concatenate((sr[0], hr[0]), axis=1)
+                val_sr_hr_comparisons.append(sr_hr)
 
             # compute the average val loss for the current validation epoch
             val_loss /= val_samples
@@ -267,7 +269,7 @@ class Trainer:
             val_psnr = round(val_psnr / val_samples, 2)
             val_ssim = round(val_ssim / val_samples, 2)
 
-        return val_loss, val_psnr, val_ssim, [sr_hr]
+        return val_loss, val_psnr, val_ssim, val_sr_hr_comparisons
 
     def save(self, filename: str):
         filename = f"{filename}.pt"

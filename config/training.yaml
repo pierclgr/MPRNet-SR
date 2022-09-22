@@ -3,7 +3,7 @@ train_dataset:
   shuffle: true
   num_workers: 2
   pin_memory: true
-  batch_size: 64
+  batch_size: 16
   augment: true
   patch_size: 64
   scales:
