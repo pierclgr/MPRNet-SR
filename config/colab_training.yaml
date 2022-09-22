@@ -26,10 +26,12 @@ loss: L1Loss
 optimizer:
   name: AdamP
   learning_rate: 0.001
+  halving_steps: 400000
   betas:
     - 0.9
     - 0.999
   eps: 0.00000001
+clip: 10
 model_folder: /content/MPRNet-SR/data/div2k/trained_models/
 output_model_file: mprnet_final_model
 wandb:

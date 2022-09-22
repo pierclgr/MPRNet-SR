@@ -10,6 +10,7 @@ from src.metrics import compute_metrics
 from src.utils import get_device, set_seeds
 from tqdm.auto import tqdm
 import torch
+from torch.nn.utils import clip_grad_norm
 
 
 class Trainer:
@@ -132,10 +133,17 @@ class Trainer:
 
                 # do a gradient descent step
                 loss.backward()
+                clip_grad_norm(self.model.parameters(), self.config.clip)
                 self.optimizer.step()
 
                 # increment the number of total steps
                 steps += 1
+
+                # half learning rate
+                if (steps % self.config.optimizer.halving_steps) == 0:
+                    self.learning_rate /= 2
+                    for param_group in self.optimizer.param_groups:
+                        param_group["lr"] = self.learning_rate
 
                 # if number of maximum training steps is reached
                 if steps >= self.config.max_training_steps:
@@ -296,7 +304,7 @@ def main(config: DictConfig):
     trainer = Trainer(config)
 
     # run the training
-    trainer.validate()
+    trainer.train()
 
     # if logging is enabled, finish the logger
     if config.wandb.logging:
