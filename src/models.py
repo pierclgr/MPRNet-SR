@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from src.exceptions import InvalidScaleException
-from src.utils import count_parameters
 import torch.nn.functional as F
 
 

@@ -8,6 +8,8 @@ import torchvision.transforms as T
 import numpy as np
 import cv2
 
+cv2.setNumThreads(0)
+
 
 class TrainDataset(data.Dataset):
     """
@@ -122,6 +124,70 @@ class TrainDataset(data.Dataset):
 
         # return the batch
         return scale, lr, hr
+
+
+class ValidationDataset(data.Dataset):
+    """
+    PyTorch dataset loading a train dataset of lr and hr patches
+    """
+
+    def __init__(self, dataset_path: str, scale: int = 2,
+                 degradation: str = "bicubic") -> None:
+        """
+        Constructor method of the class
+
+        :param dataset_path: path of the folder containing dataset images (str)
+        :param scales: list containing the resolution scales to consider (list, default None)
+        :param degradation: type of degraded images to use (str, default "bicubic")
+        :param patch_size: size of the square (patch_size x patch_size) lr patches to extract (int, default 64)
+        """
+
+        super(ValidationDataset, self).__init__()
+
+        # define dataset path
+        self.dataset_path = dataset_path
+
+        # define degradation method to use
+        self.degradation = degradation.lower()
+
+        # extract the image file names from the dataset
+        self.filenames = sorted(os.listdir(os.path.join(dataset_path, "hr")))
+
+        # define scale
+        self.scale = scale
+
+    def __len__(self) -> int:
+        """
+        Returns the length of the dataset
+
+        :return: length of the dataset
+        """
+
+        return len(self.filenames)
+
+    def __getitem__(self, item) -> tuple:
+        """
+        Get a HR image and the corresponding LR images in all the scales
+
+        :param item: the chosen item index in the dataset
+        """
+
+        # select the image to pick
+        file_name = self.filenames[item]
+
+        # extract the HR image from the HR folder
+        hr_image_path = os.path.join(self.dataset_path, "hr", file_name)
+        hr_image = io.imread(hr_image_path)
+
+        # extract the LR image for the current scale from the LR folder
+        lr_image_path = os.path.join(self.dataset_path, "lr", self.degradation, "x" + str(self.scale),
+                                     file_name)
+        lr_image = io.imread(lr_image_path)
+
+        # define the output tuple as empty
+        output_tuple = (self.scale, T.ToTensor()(lr_image.copy()), T.ToTensor()(hr_image.copy()))
+
+        return output_tuple
 
 
 class TestDataset(data.Dataset):

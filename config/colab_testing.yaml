@@ -1,5 +1,5 @@
 test_dataset:
-  path: /Users/pierclgr/PycharmProjects/ML4CV/data/Set5/
+  path: /content/MPRNet-SR/data/Set5/
   shuffle: false
   num_workers: 1
   pin_memory: true
@@ -7,7 +7,7 @@ test_dataset:
   degradation: bicubic
   scale: 2
 model: MultiPathResidualNetwork
-model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
+model_folder: /content/MPRNet-SR/data/div2k/trained_models/
 output_model_file: mprnet_final_model
 wandb:
   logging: true

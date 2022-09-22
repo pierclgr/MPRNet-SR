@@ -1,13 +1,13 @@
 import importlib
 import os
-
+import hydra
 import numpy as np
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 from torch.utils import data
-from src.datasets import TrainDataset
+from src.datasets import TrainDataset, ValidationDataset
 from src.logger import WandbLogger
 from src.metrics import compute_metrics
-from src.utils import get_device
+from src.utils import get_device, set_seeds
 from tqdm.auto import tqdm
 import torch
 
@@ -46,9 +46,9 @@ class Trainer:
 
         # create train dataloader from the given training dataset
         train_dataset = TrainDataset(config.train_dataset.path,
-                                     scales=list(config.scales),
-                                     degradation=config.degradation,
-                                     patch_size=config.patch_size,
+                                     scales=list(config.train_dataset.scales),
+                                     degradation=config.train_dataset.degradation,
+                                     patch_size=config.train_dataset.patch_size,
                                      augment=config.train_dataset.augment)
         self.train_dataloader = data.DataLoader(train_dataset,
                                                 batch_size=config.train_dataset.batch_size,
@@ -58,15 +58,12 @@ class Trainer:
                                                 pin_memory=config.train_dataset.pin_memory)
 
         # create validation dataloader from the given validation dataset
-        val_dataset = TrainDataset(config.val_dataset.path,
-                                   scales=list(config.scales),
-                                   degradation=config.degradation,
-                                   patch_size=config.patch_size,
-                                   augment=config.val_dataset.augment)
+        val_dataset = ValidationDataset(config.val_dataset.path,
+                                        scale=config.val_dataset.scale,
+                                        degradation=config.val_dataset.degradation)
         self.val_dataloader = data.DataLoader(val_dataset,
                                               batch_size=config.val_dataset.batch_size,
                                               shuffle=config.val_dataset.shuffle,
-                                              collate_fn=TrainDataset.collate_fn,
                                               num_workers=config.val_dataset.num_workers,
                                               pin_memory=config.val_dataset.pin_memory)
 
@@ -116,6 +113,10 @@ class Trainer:
                 # add current loss to the training loss
                 train_loss += loss.item() * batch_size
                 train_samples += batch_size
+
+                # convert the two image batches to numpy array and reshape to have channels in last dimension
+                hrs = hrs.cpu().detach().numpy().transpose(0, 2, 3, 1)
+                srs = srs.cpu().detach().numpy().transpose(0, 2, 3, 1)
 
                 # compute the current training metrics
                 psnr, ssim = compute_metrics(hrs, srs)
@@ -200,7 +201,9 @@ class Trainer:
             # increment number of epochs
             epochs += 1
 
-        print("Finish!")
+        print("Training finished! Saving model...")
+        self.save(self.config.output_model_file)
+        print("Done!")
 
     def validate(self):
         print("Evaluating...")
@@ -230,6 +233,10 @@ class Trainer:
                 loss = self.criterion(sr, hr)
                 val_loss += loss.item() * batch_size
                 val_samples += batch_size
+
+                # convert the two image batches to numpy array and reshape to have channels in last dimension
+                hr = hr.cpu().detach().numpy().transpose(0, 2, 3, 1)
+                sr = sr.cpu().detach().numpy().transpose(0, 2, 3, 1)
 
                 # comupute psnr and ssim for the current validation sample
                 psnr, ssim = compute_metrics(hr, sr)
@@ -278,3 +285,23 @@ class Trainer:
                 print("The specified file does not exist in the trained models directory.")
         else:
             print("The directory of the trained models does not exist.")
+
+
+@hydra.main(version_base=None, config_path="../config/", config_name="training")
+def main(config: DictConfig):
+    # set seeds for reproducibility
+    set_seeds(config.seed)
+
+    # create trainer with the given testing configuration
+    trainer = Trainer(config)
+
+    # run the training
+    trainer.validate()
+
+    # if logging is enabled, finish the logger
+    if config.wandb.logging:
+        trainer.logger.finish()
+
+
+if __name__ == "__main__":
+    main()

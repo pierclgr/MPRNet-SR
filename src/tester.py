@@ -1,15 +1,15 @@
 import importlib
 import os
 import torch
-from matplotlib import pyplot as plt
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 from torch.utils import data
 import numpy as np
 from src.datasets import TestDataset
 from src.logger import WandbLogger
-from src.utils import get_device
+from src.utils import get_device, set_seeds
 from tqdm.auto import tqdm
 from src.metrics import compute_metrics
+import hydra
 
 
 class Tester:
@@ -41,6 +41,9 @@ class Tester:
                                                shuffle=config.test_dataset.shuffle,
                                                num_workers=config.test_dataset.num_workers,
                                                pin_memory=config.test_dataset.pin_memory)
+
+        # load the weights from the saved file
+        self.load(self.config.output_model_file)
 
     def test(self):
         print("Testing...")
@@ -112,3 +115,23 @@ class Tester:
                 print("The specified file does not exist in the trained models directory.")
         else:
             print("The directory of the trained models does not exist.")
+
+
+@hydra.main(version_base=None, config_path="../config/", config_name="testing")
+def main(config: DictConfig):
+    # set seeds for reproducibility
+    set_seeds(config.seed)
+
+    # create tester with the given testing configuration
+    tester = Tester(config)
+
+    # run the test
+    tester.test()
+
+    # if logging is enabled, finish the logger
+    if config.wandb.logging:
+        tester.logger.finish()
+
+
+if __name__ == "__main__":
+    main()
