@@ -7,7 +7,7 @@ test_dataset:
   degradation: bicubic
   scale: 2
 model: MultiPathResidualNetwork
-model_folder: /content/MPRNet-SR/data/div2k/trained_models/
+model_folder: /content/MPRNet-SR/trained_models/
 output_model_file: mprnet_final_model
 wandb:
   logging: true

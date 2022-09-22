@@ -32,7 +32,7 @@ optimizer:
     - 0.999
   eps: 0.00000001
 clip: 10
-model_folder: /content/MPRNet-SR/data/div2k/trained_models/
+model_folder: /content/MPRNet-SR/trained_models/
 output_model_file: mprnet_final_model
 wandb:
   logging: true
