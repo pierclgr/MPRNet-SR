@@ -61,7 +61,8 @@ class Trainer:
         # create validation dataloader from the given validation dataset
         val_dataset = ValidationDataset(config.val_dataset.path,
                                         scale=config.val_dataset.scale,
-                                        degradation=config.val_dataset.degradation)
+                                        degradation=config.val_dataset.degradation,
+                                        n_images=config.val_dataset.n_images_to_use)
         self.val_dataloader = data.DataLoader(val_dataset,
                                               batch_size=config.val_dataset.batch_size,
                                               shuffle=config.val_dataset.shuffle,
@@ -308,7 +309,7 @@ def main(config: DictConfig):
     trainer = Trainer(config)
 
     # run the training
-    trainer.train()
+    trainer.validate()
 
     # if logging is enabled, finish the logger
     if config.wandb.logging:

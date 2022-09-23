@@ -19,6 +19,7 @@ val_dataset:
   batch_size: 1
   degradation: bicubic
   scale: 2
+  n_images_to_use: 5
 image_channels: 3
 seed: 1507
 model: MultiPathResidualNetwork
@@ -35,7 +36,7 @@ clip: 10
 model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
 output_model_file: mprnet_final_model
 wandb:
-  logging: true
+  logging: false # true
   run_name: Train_MPRNet
   project_name: ML4CV_project
   entity_name: pierclgr

@@ -19,6 +19,7 @@ val_dataset:
   batch_size: 1
   degradation: bicubic
   scale: 2
+  n_images_to_use: 5
 image_channels: 3
 seed: 1507
 model: MultiPathResidualNetwork
@@ -26,7 +27,7 @@ loss: L1Loss
 optimizer:
   name: AdamP
   learning_rate: 0.001
-  halving_steps: 400000
+  halving_steps: 150000 # 400000
   betas:
     - 0.9
     - 0.999
@@ -39,4 +40,4 @@ wandb:
   run_name: Train_MPRNet
   project_name: ML4CV_project
   entity_name: pierclgr
-max_training_steps: 600000
+max_training_steps: 200000 # 600000
