@@ -20,7 +20,7 @@ class Trainer:
 
         # create the model
         self.model = getattr(importlib.import_module("src.models"), config.model)(
-            input_channels=config.image_channels)
+            input_channels=config.image_channels, n_features=config.n_features)
 
         # define the loss
         self.criterion = getattr(importlib.import_module("torch.nn"), config.loss)()
@@ -309,6 +309,9 @@ def main(config: DictConfig):
 
     # create trainer with the given testing configuration
     trainer = Trainer(config)
+
+    from src.utils import count_parameters
+    print(count_parameters(trainer.model))
 
     # run the training
     trainer.train()

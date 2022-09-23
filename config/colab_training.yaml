@@ -21,6 +21,7 @@ val_dataset:
   scale: 2
   n_images_to_use: 5
 image_channels: 3
+n_features: 64
 seed: 1507
 model: MultiPathResidualNetwork
 loss: L1Loss
