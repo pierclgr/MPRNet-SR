@@ -116,7 +116,7 @@ class TwoFoldAttentionModule(nn.Module):
             output_pool = torch.cat((output_max_pool, output_avg_pool), dim=1)
 
             # now, we upsample the output concatenation to recover spatial dimensions
-            upsampled_out = F.interpolate(output_pool, size=(height, width))
+            upsampled_out = F.interpolate(output_pool, size=(height, width), mode="bilinear", align_corners=False)
 
             # once we upsampled the concatenation, we apply
             output = self.conv2d_1(upsampled_out)
