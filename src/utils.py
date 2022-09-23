@@ -47,9 +47,6 @@ def set_seeds(seed: int = 1507) -> None:
     # set pytorch random seed
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
 def rename() -> None:
