@@ -198,7 +198,7 @@ class TestDataset(data.Dataset):
     PyTorch dataset loading a test dataset of hr images and creating lr images by degrading
     """
 
-    def __init__(self, dataset_path: str, scale: int = 2, degradation: str = "bicubic") -> None:
+    def __init__(self, dataset_path: str, scale: int = 3, degradation: str = "bicubic") -> None:
         """
         Constructor method of the class
 
@@ -216,10 +216,7 @@ class TestDataset(data.Dataset):
         self.degradation = degradation.lower()
 
         # define scales to use
-        if self.degradation == "bicubic":
-            self.scale = scale
-        else:
-            self.scale = 3
+        self.scale = scale
 
         # extract the image file names from the dataset
         self.filenames = sorted(os.listdir(dataset_path))
