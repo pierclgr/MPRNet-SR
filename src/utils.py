@@ -49,7 +49,6 @@ def set_seeds(seed: int = 1507) -> None:
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-    torch.use_deterministic_algorithms(True)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
