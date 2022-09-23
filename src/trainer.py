@@ -205,9 +205,11 @@ class Trainer:
                 self.logger.log("val_ssim", val_ssim, epochs)
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
-                self.logger.log_images(train_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(train_sr_hr_comparisons[:self.config.wandb.n_images_to_log],
+                                       caption="Left: SR, Right: ground truth (HR)",
                                        name="Training samples", step=epochs)
-                self.logger.log_images(val_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(val_sr_hr_comparisons[:self.config.wandb.n_images_to_log],
+                                       caption="Left: SR, Right: ground truth (HR)",
                                        name="Validation samples", step=epochs)
 
             # increment number of epochs
@@ -309,7 +311,7 @@ def main(config: DictConfig):
     trainer = Trainer(config)
 
     # run the training
-    trainer.validate()
+    trainer.train()
 
     # if logging is enabled, finish the logger
     if config.wandb.logging:

@@ -14,5 +14,6 @@ wandb:
   run_name: Test_MPRNet_Set5
   project_name: ML4CV_project
   entity_name: pierclgr
+  n_images_to_log: 3
 seed: 1507
 image_channels: 3

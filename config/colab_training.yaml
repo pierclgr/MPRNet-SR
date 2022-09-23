@@ -40,4 +40,5 @@ wandb:
   run_name: Train_MPRNet
   project_name: ML4CV_project
   entity_name: pierclgr
+  n_images_to_log: 3
 max_training_steps: 200000 # 600000

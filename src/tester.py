@@ -92,7 +92,8 @@ class Tester:
             if self.logger:
                 self.logger.log("test_psnr", test_psnr, summary=True)
                 self.logger.log("test_ssim", test_ssim, summary=True)
-                self.logger.log_images(test_sr_hr_comparisons[0:3], caption="Left: SR, Right: ground truth (HR)",
+                self.logger.log_images(test_sr_hr_comparisons[:self.config.wandb.n_images_to_log],
+                                       caption="Left: SR, Right: ground truth (HR)",
                                        name="Testing samples", step=0)
 
             # print the metrics at the end of the epoch
