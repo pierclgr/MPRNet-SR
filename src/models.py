@@ -277,11 +277,6 @@ class ResidualConcatenationBlock(nn.Module):
         # forward function
         self.arb = AdaptiveResidualBlock(input_channels=input_channels)
 
-        # the definition of the Residual Concatenation Block also contains three different 1x1 conv layers, each one of
-        # them following one of the ARB; these three 1x1 conv layers also share the same weights, however they have
-        # different input sizes because the input is a concatenation of different feature maps, thus meaning that the
-        # number of channels for each 1x1 conv layer will be different; we cannot implement the shared weights as a
-        # single layer called multiple times because of this; we thus implement three different 1x1 conv layers
         # define the first 1x1 convolutional layer
         first_conv_input_channels = input_channels * 2
         self.conv_1x1_1 = Conv2d1x1(input_channels=first_conv_input_channels, out_channels=input_channels)
@@ -519,7 +514,7 @@ class MultiPathResidualNetwork(nn.Module):
         self.upnet = UpNetModule(input_channels=n_features)
 
         # define the final 3x3 convolution that restores the channels to three RGB channels
-        self.out_conv = nn.Conv2d(in_channels=n_features, out_channels=3, kernel_size=(3, 3),
+        self.out_conv = nn.Conv2d(in_channels=n_features, out_channels=input_channels, kernel_size=(3, 3),
                                   padding=padding_size)
 
     def forward(self, lrs, scale: int):
