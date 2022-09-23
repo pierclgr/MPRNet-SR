@@ -86,7 +86,7 @@ class Tester:
 
             # compute the average metrics value for the dataset
             test_psnr = round(test_psnr / test_samples, 2)
-            test_ssim = round(test_ssim / test_samples, 2)
+            test_ssim = round(test_ssim / test_samples, 4)
 
             # log the average psnr and ssim of the dataset and the images
             if self.logger:

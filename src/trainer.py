@@ -160,7 +160,7 @@ class Trainer:
 
             # compute the average metrics for the current training epoch
             train_psnr = round(train_psnr / train_samples, 2)
-            train_ssim = round(train_ssim / train_samples, 2)
+            train_ssim = round(train_ssim / train_samples, 4)
 
             # evaluate the model for each scale at the end of the epoch (when we looped the entire training set) and get
             # the validation loss and metrics
@@ -270,7 +270,7 @@ class Trainer:
 
             # compute the average metrics for the current validation epoch
             val_psnr = round(val_psnr / val_samples, 2)
-            val_ssim = round(val_ssim / val_samples, 2)
+            val_ssim = round(val_ssim / val_samples, 4)
 
         return val_loss, val_psnr, val_ssim, val_sr_hr_comparisons
 
