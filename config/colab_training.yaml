@@ -18,7 +18,7 @@ val_dataset:
   pin_memory: true
   batch_size: 1
   degradation: bicubic
-  scale: 2
+  scale: 4
   n_images_to_use: 5
 image_channels: 3
 n_features: 64

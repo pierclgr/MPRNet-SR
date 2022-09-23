@@ -6,7 +6,7 @@ from torch.utils import data
 import numpy as np
 from src.datasets import TestDataset
 from src.logger import WandbLogger
-from src.utils import get_device, set_seeds
+from src.utils import get_device, set_seeds, count_parameters
 from tqdm.auto import tqdm
 from src.metrics import compute_metrics
 import hydra
@@ -125,6 +125,7 @@ def main(config: DictConfig):
 
     # create tester with the given testing configuration
     tester = Tester(config)
+    count_parameters(tester.model)
 
     # run the test
     tester.test()

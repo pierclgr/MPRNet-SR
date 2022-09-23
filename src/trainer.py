@@ -11,6 +11,7 @@ from src.utils import get_device, set_seeds
 from tqdm.auto import tqdm
 import torch
 from torch.nn.utils import clip_grad_norm_
+from src.utils import count_parameters
 
 
 class Trainer:
@@ -309,9 +310,7 @@ def main(config: DictConfig):
 
     # create trainer with the given testing configuration
     trainer = Trainer(config)
-
-    from src.utils import count_parameters
-    print(count_parameters(trainer.model))
+    count_parameters(trainer.model)
 
     # run the training
     trainer.train()
