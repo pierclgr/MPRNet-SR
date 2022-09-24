@@ -127,7 +127,7 @@ class TwoFoldAttentionModule(nn.Module):
         super().__init__()
 
         # define first 1x1 convolution layer
-        self.conv1x1_1 = Conv2d1x1(input_channels=input_channels, reduction_factor=4)
+        self.conv1x1_1 = Conv2d1x1(input_channels=input_channels, reduction_factor=16)
 
         # now, we define respectively the Channel Unit (CA Unit) and the Positional Unit (Pos Unit)
         self.ca_unit = self.ChannelUnit(input_channels=self.conv1x1_1.out_channels)
