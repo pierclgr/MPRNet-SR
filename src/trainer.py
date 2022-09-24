@@ -207,6 +207,7 @@ class Trainer:
                 self.logger.log("best_val_psnr", best_val_psnr, summary=True)
                 self.logger.log("best_val_ssim", best_val_ssim, summary=True)
                 self.logger.log("total_steps", steps, step=epochs)
+                self.logger.log("learning_rate", self.learning_rate, step=epochs)
                 self.logger.log_images(train_sr_hr_comparisons[:self.config.wandb.n_images_to_log],
                                        caption="Left: SR, Right: ground truth (HR)",
                                        name="Training samples", step=epochs)
