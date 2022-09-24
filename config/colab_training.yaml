@@ -3,7 +3,7 @@ train_dataset:
   shuffle: true
   num_workers: 2
   pin_memory: true
-  batch_size: 64 # 16
+  batch_size: 16 # 64
   augment: true
   patch_size: 64
   scales:
@@ -27,7 +27,7 @@ model: MultiPathResidualNetwork
 loss: L1Loss
 optimizer:
   name: AdamP
-  learning_rate: 0.001
+  learning_rate: 0.0001 # 0.001
   halving_steps: 400000
   betas:
     - 0.9
