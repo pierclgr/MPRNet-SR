@@ -100,8 +100,11 @@ class TwoFoldAttentionModule(nn.Module):
             self.max_pooling = nn.MaxPool2d(kernel_size=(7, 7))
 
             # define the final convolutional layer
-            self.conv2d_1 = nn.Conv2d(in_channels=input_channels * 2, out_channels=input_channels, kernel_size=(7, 7),
-                                      padding=(3, 3))
+            kernel_size = 7
+            padding_size = kernel_size // 2
+            self.conv2d_1 = nn.Conv2d(in_channels=input_channels * 2, out_channels=input_channels,
+                                      kernel_size=(kernel_size, kernel_size),
+                                      padding=(padding_size, padding_size))
 
         def forward(self, input_tensor):
             # get the spatial dimensions of the input tensor
