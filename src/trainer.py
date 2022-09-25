@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 import torch
 from torch.nn.utils import clip_grad_norm_
 from src.utils import count_parameters
+import pprint
 
 
 class Trainer:
@@ -40,6 +41,8 @@ class Trainer:
 
         # configure logger
         configuration = OmegaConf.to_object(config)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(configuration)
         if config.wandb.logging:
             self.logger = WandbLogger(name=config.wandb.run_name, config=configuration,
                                       project=config.wandb.project_name, entity=config.wandb.entity_name)

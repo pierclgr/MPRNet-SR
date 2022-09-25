@@ -10,6 +10,7 @@ from src.utils import get_device, set_seeds, count_parameters
 from tqdm.auto import tqdm
 from src.metrics import compute_metrics
 import hydra
+import pprint
 
 
 class Tester:
@@ -26,6 +27,8 @@ class Tester:
 
         # configure logger
         configuration = OmegaConf.to_object(config)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(configuration)
         if config.wandb.logging:
             self.logger = WandbLogger(name=config.wandb.run_name, config=configuration,
                                       project=config.wandb.project_name, entity=config.wandb.entity_name)
