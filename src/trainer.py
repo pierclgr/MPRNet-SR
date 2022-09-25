@@ -282,9 +282,9 @@ class Trainer:
         trained_model_path = self.config.model_folder
         if not os.path.isdir(trained_model_path):
             os.makedirs(trained_model_path)
-        file_path = f"{trained_model_path}{filename}.pt"
+        file_path = f"{trained_model_path}{filename}"
 
-        print(f"Saving trained model to {filename}.pt...")
+        print(f"Saving trained model to {file_path}...")
 
         # save network weights
         checkpoint = {"model_weights", self.model.state_dict()}
@@ -296,7 +296,7 @@ class Trainer:
         if os.path.isdir(trained_model_path):
             file_path = f"{trained_model_path}{filename}"
             if os.path.isfile(file_path):
-                print(f"Loading model from {filename}...")
+                print(f"Loading model from {file_path}...")
                 checkpoint = torch.load(file_path, map_location=torch.device("cpu"))
                 self.model.load_state_dict(checkpoint['model_weights'])
             else:
