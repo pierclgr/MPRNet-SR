@@ -287,8 +287,7 @@ class Trainer:
         print(f"Saving trained model to {file_path}...")
 
         # save network weights
-        checkpoint = {"model_weights", self.model.state_dict()}
-        torch.save(checkpoint, file_path)
+        torch.save(self.model.state_dict(), file_path)
 
     def load(self, filename: str) -> None:
         filename = f"{filename}.pt"
@@ -297,8 +296,8 @@ class Trainer:
             file_path = f"{trained_model_path}{filename}"
             if os.path.isfile(file_path):
                 print(f"Loading model from {file_path}...")
-                checkpoint = torch.load(file_path, map_location=torch.device("cpu"))
-                self.model.load_state_dict(checkpoint['model_weights'])
+                weights = torch.load(file_path, map_location=torch.device("cpu"))
+                self.model.load_state_dict(weights)
             else:
                 print("The specified file does not exist in the trained models directory.")
         else:
