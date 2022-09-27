@@ -10,7 +10,7 @@ model: MultiPathResidualNetwork
 model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
 output_model_file: mprnet_final_model
 wandb:
-  logging: true
+  logging: false # true
   run_name: Test_MPRNet_Set5
   project_name: ML4CV_project
   entity_name: pierclgr

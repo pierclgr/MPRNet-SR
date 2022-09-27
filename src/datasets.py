@@ -246,22 +246,41 @@ class TestDataset(data.Dataset):
 
         # if image is grayscale, add the third dimension (channel)
         if len(hr_image.shape) < 3:
-            hr_image = np.stack((hr_image,) * 3, axis=-1)
+            hr_image = cv2.cvtColor(hr_image, cv2.COLOR_GRAY2RGB)
 
-        lr_image = self.degradate(hr_image)
+        lr_image, hr_image = self.degrade(hr_image)
 
         # define the output tuple and return it
         output_tuple = (self.scale, T.ToTensor()(lr_image.copy()), T.ToTensor()(hr_image.copy()))
 
         return output_tuple
 
-    def degradate(self, image: np.ndarray):
-        # compute the output size of the degradated image
+    def degrade(self, image: np.ndarray):
+        # compute the output size of the degraded image
         height = image.shape[0]
         width = image.shape[1]
 
-        height = height // self.scale
-        width = width // self.scale
+        # compute the actual rescaled size of the degraded image
+        downscaled_height = height / self.scale
+        downscaled_width = width / self.scale
+
+        # if either the downscale width or height is a float number (meaning the original height/width is not divisible)
+        # by the scale
+        if not downscaled_width.is_integer() or not downscaled_height.is_integer():
+            # compute the actual rounded downscaled sizes
+            height = height // self.scale
+            width = width // self.scale
+
+            # upscale the rounded sizes by using the scale to compute the SR resolution
+            output_height = height * self.scale
+            output_width = width * self.scale
+
+            # rescale the hr image to the SR output size
+            image = cv2.resize(image, dsize=(output_width, output_height), interpolation=cv2.INTER_CUBIC)
+        else:
+            # just compute the actual rounded height
+            height = height // self.scale
+            width = width // self.scale
 
         # apply the degradation module
         if self.degradation == "bicubic":
@@ -304,4 +323,4 @@ class TestDataset(data.Dataset):
         else:
             degradated_image = image
 
-        return degradated_image
+        return degradated_image, image
