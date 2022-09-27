@@ -36,6 +36,7 @@ optimizer:
 clip: null # 10
 model_folder: /content/MPRNet-SR/trained_models/
 output_model_file: mprnet_final_model
+load_weights: true
 wandb:
   logging: true
   run_name: Train_MPRNet

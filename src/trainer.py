@@ -73,6 +73,10 @@ class Trainer:
                                               num_workers=config.val_dataset.num_workers,
                                               pin_memory=config.val_dataset.pin_memory)
 
+        # load the weights if required
+        if config.load_weights:
+            self.load(self.config.output_model_file)
+
     def train(self):
 
         # set initial values for total training epochs and steps
@@ -302,10 +306,11 @@ class Trainer:
                 print(f"Loading model from {file_path}...")
                 weights = torch.load(file_path, map_location=torch.device("cpu"))
                 self.model.load_state_dict(weights)
+                print("Done!")
             else:
-                print("The specified file does not exist in the trained models directory.")
+                print("Weights file not found, the training will start from the beginning.")
         else:
-            print("The directory of the trained models does not exist.")
+            print("The directory of the trained models does not exist. The training will start from the beginning.")
 
 
 @hydra.main(version_base=None, config_path="../config/", config_name="training")

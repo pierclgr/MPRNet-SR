@@ -115,6 +115,7 @@ class Tester:
                 print(f"Loading model from {file_path}...")
                 weights = torch.load(file_path, map_location=torch.device("cpu"))
                 self.model.load_state_dict(weights)
+                print("Done!")
             else:
                 print("The specified file does not exist in the trained models directory.")
         else:
