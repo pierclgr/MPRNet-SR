@@ -27,8 +27,8 @@ model: MultiPathResidualNetwork
 loss: L1Loss
 optimizer:
   name: AdamP
-  learning_rate: 0.001 # 0.0001
-  halving_steps: 2500 # 400000
+  learning_rate: 0.001
+  halving_steps: 400000
   betas:
     - 0.9
     - 0.999
