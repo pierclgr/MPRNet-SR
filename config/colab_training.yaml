@@ -33,7 +33,7 @@ optimizer:
     - 0.9
     - 0.999
   eps: 0.00000001
-clip: 10
+clip: null # 10
 model_folder: /content/MPRNet-SR/trained_models/
 output_model_file: mprnet_final_model
 wandb:

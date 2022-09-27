@@ -140,7 +140,8 @@ class Trainer:
 
                 # do a gradient descent step
                 loss.backward()
-                clip_grad_norm_(self.model.parameters(), self.config.clip)
+                if self.config.clip is not None:
+                    clip_grad_norm_(self.model.parameters(), self.config.clip)
                 self.optimizer.step()
 
                 # increment the number of total steps
