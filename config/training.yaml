@@ -36,7 +36,9 @@ optimizer:
 clip: 10 # null
 model_folder: /Users/pierclgr/PycharmProjects/ML4CV/trained_models/
 output_model_file: mprnet_final_model
-load_weights: true
+checkpoint_every: 10000
+load_checkpoint: true
+checkpoint_file: mprnet_latest_checkpoint
 wandb:
   logging: false # true
   run_name: Train_MPRNet

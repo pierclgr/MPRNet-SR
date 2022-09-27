@@ -1,5 +1,7 @@
 import importlib
 import os
+from typing import Optional
+
 import hydra
 import numpy as np
 from omegaconf import OmegaConf, DictConfig
@@ -13,6 +15,7 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from src.utils import count_parameters
 import pprint
+import glob
 
 
 class Trainer:
@@ -73,19 +76,28 @@ class Trainer:
                                               num_workers=config.val_dataset.num_workers,
                                               pin_memory=config.val_dataset.pin_memory)
 
-        # load the weights if required
-        if config.load_weights:
-            self.load(self.config.output_model_file)
-
     def train(self):
 
         # set initial values for total training epochs and steps
         print("Starting training...")
-        steps = 0
-        epochs = 0
         finished = False
 
-        steps_pbar = tqdm(total=self.config.max_training_steps, position=0)
+        # load the checkpoint if required
+        if self.config.load_checkpoint:
+            checkpoint = self.checkpoint_load()
+
+            # if the checkpoint dictionary is an empty dict, checkpoint is not loaded so initialize values
+            if bool(checkpoint):
+                # initialize the current epoch metrics by loading from the checkpoint
+                self.learning_rate = checkpoint["learning_rate"]
+                epochs = checkpoint["epochs"]
+                steps = checkpoint["steps"]
+            else:
+                steps = 0
+                epochs = 0
+        else:
+            steps = 0
+            epochs = 0
 
         # while the training is not finished (i.e. we haven't reached the max number of training steps)
         while not finished:
@@ -150,13 +162,21 @@ class Trainer:
 
                 # increment the number of total steps
                 steps += 1
-                steps_pbar.update(1)
 
                 # half learning rate
                 if (steps % self.config.optimizer.halving_steps) == 0:
                     self.learning_rate /= 2
                     for param_group in self.optimizer.param_groups:
                         param_group["lr"] = self.learning_rate
+
+                # checkpoint
+                if (steps % self.config.checkpoint_every) == 0:
+                    checkpoint_info = {"learning_rate": self.learning_rate,
+                                       "epochs": epochs,
+                                       "steps": steps}
+
+                    # checkpoint the training
+                    self.checkpoint_save(checkpoint=checkpoint_info)
 
                 # if number of maximum training steps is reached
                 if steps >= self.config.max_training_steps:
@@ -229,7 +249,6 @@ class Trainer:
         print("Training finished! Saving model...")
         self.save(self.config.output_model_file)
         print("Done!")
-        steps_pbar.close()
 
     def validate(self):
         print("Evaluating...")
@@ -308,9 +327,51 @@ class Trainer:
                 self.model.load_state_dict(weights)
                 print("Done!")
             else:
-                print("Weights file not found, the training will start from the beginning.")
+                print("Weights file not found.")
         else:
-            print("The directory of the trained models does not exist. The training will start from the beginning.")
+            print("The directory of the trained models does not exist.")
+
+    def checkpoint_save(self, checkpoint: dict) -> None:
+        print(f"Checkpointing at step {checkpoint['steps']}...")
+        checkpoint_path = f"{self.config.model_folder}checkpoints/"
+        if not os.path.isdir(checkpoint_path):
+            os.makedirs(checkpoint_path)
+        file_path = f"{checkpoint_path}{self.config.checkpoint_file}.pt"
+
+        checkpoint['model_weights'] = self.model.state_dict()
+        checkpoint['optimizer_weights'] = self.optimizer.state_dict()
+
+        # remove old checkpoints to save storage
+        folder = glob.glob(f"{checkpoint_path}*")
+        for file in folder:
+            os.remove(file)
+
+        # checkpoint the training
+        torch.save(checkpoint, file_path)
+
+    def checkpoint_load(self) -> dict:
+        checkpoint_path = f"{self.config.model_folder}checkpoints/"
+
+        # if the folder with checkpoints exists and contains the checkpoint file
+        if os.path.isdir(checkpoint_path):
+            checkpoint_file_path = f"{checkpoint_path}{self.config.checkpoint_file}.pt"
+            if os.path.isfile(checkpoint_file_path):
+                # load checkpoint information from the file
+                print(f"Loading checkpoint from file {checkpoint_file_path}...")
+                checkpoint = torch.load(checkpoint_file_path)
+
+                self.model.load_state_dict(checkpoint['model_weights'])
+                self.optimizer.load_state_dict(checkpoint['optimizer_weights'])
+
+                return checkpoint
+            else:
+                # no file exists in the folder, so return None
+                print("Checkpoint file does not exist. Training is starting from the beginning...")
+                return {}
+        else:
+            # the checkpoint folder does not exist, so return None
+            print("Checkpoint folder does not exist. Training is starting from the beginning...")
+            return {}
 
 
 @hydra.main(version_base=None, config_path="../config/", config_name="training")
