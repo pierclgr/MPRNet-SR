@@ -28,7 +28,7 @@ loss: L1Loss
 optimizer:
   name: AdamP
   learning_rate: 0.001
-  halving_steps: 400000
+  halving_steps: 40000 # 400000
   betas:
     - 0.9
     - 0.999
@@ -45,4 +45,4 @@ wandb:
   project_name: ML4CV_project
   entity_name: pierclgr
   n_images_to_log: 3
-max_training_steps: 10000 # 600000
+max_training_steps: 60000 # 600000
