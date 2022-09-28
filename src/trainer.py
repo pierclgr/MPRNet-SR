@@ -173,7 +173,8 @@ class Trainer:
 
                 # half learning rate
                 if (steps % self.config.optimizer.halving_steps) == 0:
-                    self.learning_rate /= 2
+                    halved_lr = self.learning_rate / 2
+                    self.learning_rate = max(halved_lr, self.config.optimizer.min_learning_rate)
                     for param_group in self.optimizer.param_groups:
                         param_group["lr"] = self.learning_rate
 
