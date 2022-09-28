@@ -92,14 +92,10 @@ class Trainer:
                 self.learning_rate = checkpoint["learning_rate"]
                 epochs = checkpoint["epochs"]
                 steps = checkpoint["steps"]
-                # best_train_psnr = checkpoint["best_train_psnr"]
-                # best_train_ssim = checkpoint["best_train_ssim"]
-                # best_val_psnr = checkpoint["best_val_psnr"]
-                # best_val_ssim = checkpoint["best_val_ssim"]
-                best_train_psnr = 0
-                best_train_ssim = 0
-                best_val_psnr = 0
-                best_val_ssim = 0
+                best_train_psnr = checkpoint["best_train_psnr"]
+                best_train_ssim = checkpoint["best_train_ssim"]
+                best_val_psnr = checkpoint["best_val_psnr"]
+                best_val_ssim = checkpoint["best_val_ssim"]
             else:
                 steps = 0
                 epochs = 0
