@@ -92,10 +92,14 @@ class Trainer:
                 self.learning_rate = checkpoint["learning_rate"]
                 epochs = checkpoint["epochs"]
                 steps = checkpoint["steps"]
-                best_train_psnr = checkpoint["best_train_psnr"]
-                best_train_ssim = checkpoint["best_train_ssim"]
-                best_val_psnr = checkpoint["best_val_psnr"]
-                best_val_ssim = checkpoint["best_val_ssim"]
+                # best_train_psnr = checkpoint["best_train_psnr"]
+                # best_train_ssim = checkpoint["best_train_ssim"]
+                # best_val_psnr = checkpoint["best_val_psnr"]
+                # best_val_ssim = checkpoint["best_val_ssim"]
+                best_train_psnr = 0
+                best_train_ssim = 0
+                best_val_psnr = 0
+                best_val_ssim = 0
             else:
                 steps = 0
                 epochs = 0
@@ -367,7 +371,7 @@ class Trainer:
             if os.path.isfile(checkpoint_file_path):
                 # load checkpoint information from the file
                 print(f"Loading checkpoint from file {checkpoint_file_path}...")
-                checkpoint = torch.load(checkpoint_file_path)
+                checkpoint = torch.load(checkpoint_file_path, map_location=torch.device("cpu"))
 
                 self.model.load_state_dict(checkpoint['model_weights'])
                 self.optimizer.load_state_dict(checkpoint['optimizer_weights'])
