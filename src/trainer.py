@@ -92,12 +92,24 @@ class Trainer:
                 self.learning_rate = checkpoint["learning_rate"]
                 epochs = checkpoint["epochs"]
                 steps = checkpoint["steps"]
+                best_train_psnr = checkpoint["best_train_psnr"]
+                best_train_ssim = checkpoint["best_train_ssim"]
+                best_val_psnr = checkpoint["best_val_psnr"]
+                best_val_ssim = checkpoint["best_val_ssim"]
             else:
                 steps = 0
                 epochs = 0
+                best_train_psnr = 0
+                best_train_ssim = 0
+                best_val_psnr = 0
+                best_val_ssim = 0
         else:
             steps = 0
             epochs = 0
+            best_train_psnr = 0
+            best_train_ssim = 0
+            best_val_psnr = 0
+            best_val_ssim = 0
 
         # while the training is not finished (i.e. we haven't reached the max number of training steps)
         while not finished:
@@ -111,10 +123,6 @@ class Trainer:
             train_samples = 0
             train_psnr = 0
             train_ssim = 0
-            best_train_psnr = 0
-            best_train_ssim = 0
-            best_val_psnr = 0
-            best_val_ssim = 0
             train_sr_hr_comparisons = []
 
             # for each batch in the training set
@@ -173,7 +181,12 @@ class Trainer:
                 if (steps % self.config.checkpoint_every) == 0:
                     checkpoint_info = {"learning_rate": self.learning_rate,
                                        "epochs": epochs,
-                                       "steps": steps}
+                                       "steps": steps,
+                                       "best_train_psnr": best_train_psnr,
+                                       "best_train_ssim": best_train_ssim,
+                                       "best_val_psnr": best_val_psnr,
+                                       "best_val_ssim": best_val_ssim
+                                       }
 
                     # checkpoint the training
                     self.checkpoint_save(checkpoint=checkpoint_info)
@@ -196,16 +209,12 @@ class Trainer:
             val_loss, val_psnr, val_ssim, val_sr_hr_comparisons = self.validate()
 
             # compute the new best train metrics
-            if train_psnr > best_train_psnr:
-                best_train_psnr = train_psnr
-            if train_ssim > best_train_ssim:
-                best_train_ssim = train_ssim
+            best_train_psnr = max(best_train_psnr, train_psnr)
+            best_train_ssim = max(best_train_ssim, train_ssim)
 
-            # compute the new best validation metrics
-            if val_psnr > best_val_psnr:
-                best_val_psnr = val_psnr
-            if val_ssim > best_val_ssim:
-                best_val_ssim = val_ssim
+            # compute the new best validation metric
+            best_val_psnr = max(best_val_psnr, val_psnr)
+            best_val_ssim = max(best_val_ssim, val_ssim)
 
             # print the metrics at the end of the epoch
             print("Epoch:", epochs + 1, "- total_steps:", steps + 1,
