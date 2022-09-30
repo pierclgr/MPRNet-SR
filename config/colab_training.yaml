@@ -46,4 +46,4 @@ wandb:
   project_name: ML4CV_project
   entity_name: pierclgr
   n_images_to_log: 3
-max_training_steps: 20000 # 600000
+max_training_steps: 30000 # 600000
