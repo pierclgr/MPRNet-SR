@@ -89,11 +89,14 @@ class Trainer:
             # if the checkpoint dictionary is an empty dict, checkpoint is not loaded so initialize values
             if bool(checkpoint):
                 # initialize the current epoch metrics by loading from the checkpoint
-                self.learning_rate = checkpoint["learning_rate"]
                 epochs = checkpoint["epochs"]
                 if self.config.restart_steps_count:
+                    self.learning_rate = self.config.optimizer.learning_rate
                     steps = 0
+                    for param_group in self.optimizer.param_groups:
+                        param_group["lr"] = self.learning_rate
                 else:
+                    self.learning_rate = checkpoint["learning_rate"]
                     steps = checkpoint["steps"]
                 best_train_psnr = checkpoint["best_train_psnr"]
                 best_train_ssim = checkpoint["best_train_ssim"]
