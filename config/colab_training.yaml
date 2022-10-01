@@ -40,6 +40,7 @@ output_model_file: mprnet_final_model
 checkpoint_every: 2000
 load_checkpoint: true
 checkpoint_file: mprnet_latest_checkpoint
+restart_steps_count: true
 wandb:
   logging: true
   run_name: Train_MPRNet

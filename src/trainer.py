@@ -91,7 +91,10 @@ class Trainer:
                 # initialize the current epoch metrics by loading from the checkpoint
                 self.learning_rate = checkpoint["learning_rate"]
                 epochs = checkpoint["epochs"]
-                steps = checkpoint["steps"]
+                if self.config.restart_steps_count:
+                    steps = 0
+                else:
+                    steps = checkpoint["steps"]
                 best_train_psnr = checkpoint["best_train_psnr"]
                 best_train_ssim = checkpoint["best_train_ssim"]
                 best_val_psnr = checkpoint["best_val_psnr"]
