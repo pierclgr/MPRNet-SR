@@ -19,7 +19,12 @@ val_dataset:
   batch_size: 1
   degradation: bicubic
   scale: 4
-  n_images_to_use: 5
+  n_images_to_use:
+    - 18
+    - 24
+    - 27
+    - 92
+    - 45
 image_channels: 3
 n_features: 64
 seed: 1507
@@ -46,5 +51,5 @@ wandb:
   run_name: Train_MPRNet
   project_name: ML4CV_project
   entity_name: pierclgr
-  n_images_to_log: 3
+  n_images_to_log: 5
 max_training_steps: 10000 # 600000

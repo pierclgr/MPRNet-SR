@@ -125,7 +125,8 @@ class Tester:
 @hydra.main(version_base=None, config_path="../config/", config_name="testing")
 def main(config: DictConfig):
     # set seeds for reproducibility
-    set_seeds(config.seed)
+    if config.seed:
+        set_seeds(config.seed)
 
     # create tester with the given testing configuration
     tester = Tester(config)

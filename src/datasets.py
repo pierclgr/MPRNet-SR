@@ -132,7 +132,7 @@ class ValidationDataset(data.Dataset):
     """
 
     def __init__(self, dataset_path: str, scale: int = 2,
-                 degradation: str = "bicubic", n_images: int = None) -> None:
+                 degradation: str = "bicubic", n_images: list = None) -> None:
         """
         Constructor method of the class
 
@@ -153,8 +153,8 @@ class ValidationDataset(data.Dataset):
         # extract the image file names from the dataset
         self.filenames = sorted(os.listdir(os.path.join(dataset_path, "hr")))
         if n_images:
-            # sample n_images samples from the validation set in order to use less images for the validation
-            self.filenames = random.choices(self.filenames, k=n_images)
+            # select the images to use for the validation
+            self.filenames = [self.filenames[image_id-1] for image_id in n_images]
 
         # define scale
         self.scale = scale

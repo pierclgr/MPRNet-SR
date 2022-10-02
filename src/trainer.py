@@ -393,7 +393,8 @@ class Trainer:
 @hydra.main(version_base=None, config_path="../config/", config_name="training")
 def main(config: DictConfig):
     # set seeds for reproducibility
-    set_seeds(config.seed)
+    if config.seed:
+        set_seeds(config.seed)
 
     # create trainer with the given testing configuration
     trainer = Trainer(config)
