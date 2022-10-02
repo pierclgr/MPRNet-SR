@@ -22,7 +22,7 @@ val_dataset:
   n_images_to_use: 5
 image_channels: 3
 n_features: 64
-seed: 1508 # 1507
+seed: 1507
 model: MultiPathResidualNetwork
 loss: L1Loss
 optimizer:
@@ -47,4 +47,4 @@ wandb:
   project_name: ML4CV_project
   entity_name: pierclgr
   n_images_to_log: 3
-max_training_steps: 40000 # 600000
+max_training_steps: 10000 # 600000
