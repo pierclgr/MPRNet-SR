@@ -13,7 +13,6 @@ from src.metrics import compute_metrics
 import hydra
 import pprint
 import cv2
-from matplotlib import pyplot as plt
 
 
 class Tester:
@@ -123,12 +122,11 @@ class Tester:
                 hr = hr.cpu().detach().numpy().transpose(0, 2, 3, 1)
 
                 # comupute psnr and ssim for the current testing batch
-                psnr, ssim = compute_metrics(hr, sr)
-
-                # add metrics of the current batch to the total sum
-                test_samples += batch_size
-                test_psnr += np.sum(psnr)
-                test_ssim += np.sum(ssim)
+                for sample_id in range(batch_size):
+                    psnr, ssim = compute_metrics(hr[sample_id], sr[sample_id])
+                    test_psnr += psnr
+                    test_ssim += ssim
+                    test_samples += 1
 
                 # create an image containing the sr and hr image side by side and append to the array of comparison
                 # images
