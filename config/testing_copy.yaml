@@ -1,5 +1,5 @@
 test_dataset:
-  path: /content/MPRNet-SR/data/Set5/
+  path: C:\Users\pierp\Desktop\Set5\
   shuffle: false
   num_workers: 1
   pin_memory: true
@@ -9,10 +9,10 @@ test_dataset:
 testing:
   mode: model
   model: MultiPathResidualNetwork
-  model_folder: /content/MPRNet-SR/trained_models/
+  model_folder: C:\Users\pierp\Progetti\MPRNet-SR\trained_models\
   output_model_file: mprnet_final_model
 wandb:
-  logging: true
+  logging: false # true
   run_name: Test_MPRNet_Set5
   project_name: ML4CV_project
   entity_name: pierclgr

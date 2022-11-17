@@ -7,23 +7,37 @@ import numpy as np
 from src.datasets import TestDataset
 from src.logger import WandbLogger
 from src.utils import get_device, set_seeds, count_parameters
+from src.exceptions import InvalidTestModeException
 from tqdm.auto import tqdm
 from src.metrics import compute_metrics
 import hydra
 import pprint
+import cv2
+from matplotlib import pyplot as plt
 
 
 class Tester:
     def __init__(self, config):
         self.config = config
 
-        # create the model
-        self.model = getattr(importlib.import_module("src.models"), config.model)(
-            input_channels=config.image_channels)
-
         # get the device
         self.device = get_device()
-        self.model = self.model.to(self.device)
+
+        # define testing mode
+        self.testing_mode = self.config.testing.mode
+
+        # if the testing is a model testing
+        if self.testing_mode == "model":
+
+            # create the model
+            self.model = getattr(importlib.import_module("src.models"), config.testing.model)(
+                input_channels=config.image_channels)
+
+            # move model on device
+            self.model = self.model.to(self.device)
+
+            # load the weights from the saved file
+            self.load(self.config.testing.output_model_file)
 
         # configure logger
         configuration = OmegaConf.to_object(config)
@@ -45,14 +59,31 @@ class Tester:
                                                num_workers=config.test_dataset.num_workers,
                                                pin_memory=config.test_dataset.pin_memory)
 
-        # load the weights from the saved file
-        self.load(self.config.output_model_file)
+    def __bicubic_upscale(self, lr, scale):
+        # for each image in the batch
+        upscaled = []
+        for image in lr:
+            # compute the output size of the upscaled image
+            height = image.shape[0]
+            width = image.shape[1]
+
+            # compute the actual upscaled size of the upscaled image
+            upscaled_height = int(height * scale)
+            upscaled_width = int(width * scale)
+
+            # upscale the image width bicubic & append it to the batch of upscaled images
+            upscaled_image = cv2.resize(image, dsize=(upscaled_width, upscaled_height), interpolation=cv2.INTER_CUBIC)
+            upscaled.append(upscaled_image)
+        
+        # convert the list of upscaled to numpy array and return
+        return np.asarray(upscaled)
 
     def test(self):
         print("Testing...")
 
-        # set model to eval mode
-        self.model.eval()
+        # set model to eval mode if testing is a model testing
+        if self.testing_mode == "model":
+            self.model.eval()
 
         # initialize testing metrics
         test_psnr = 0
@@ -67,12 +98,29 @@ class Tester:
                 hr = hr.to(self.device)
                 batch_size = lr.size()[0]
 
-                # do forward step in the model to compute sr images
-                sr = self.model(lr, scale)
+                # if testing is a model testing
+                if self.testing_mode == "model":
+                    # do forward step in the model to compute sr images
+                    sr = self.model(lr, scale)
 
-                # convert the two image batches to numpy array and reshape to have channels in last dimension
+                    # convert the sr image batch to numpy array and reshape to have channels in last dimension
+                    sr = sr.cpu().detach().numpy().transpose(0, 2, 3, 1)
+
+                # otherwise if testing mode is bicubic
+                elif self.testing_mode == "bicubic":
+                    # convert the lr image batch to numpy array and reshape to have channels in the last dimension
+                    lr = lr.cpu().detach().numpy().transpose(0, 2, 3, 1)
+
+                    # compute bicubic upscaled batch of sr images
+                    sr = self.__bicubic_upscale(lr, scale)
+
+                # otherwise raise invalid testing mode exception
+                else:
+                    raise InvalidTestModeException(f"{self.testing_mode} is not a valid testing mode, change it to",
+                    "\"bicubic\" or \"model\"")
+
+                # convert the hr image batch to numpy array and reshape to have channels in last dimension
                 hr = hr.cpu().detach().numpy().transpose(0, 2, 3, 1)
-                sr = sr.cpu().detach().numpy().transpose(0, 2, 3, 1)
 
                 # comupute psnr and ssim for the current testing batch
                 psnr, ssim = compute_metrics(hr, sr)
@@ -108,7 +156,7 @@ class Tester:
 
     def load(self, filename: str) -> None:
         filename = f"{filename}.pt"
-        trained_model_path = self.config.model_folder
+        trained_model_path = self.config.testing.model_folder
         if os.path.isdir(trained_model_path):
             file_path = f"{trained_model_path}{filename}"
             if os.path.isfile(file_path):
@@ -130,7 +178,10 @@ def main(config: DictConfig):
 
     # create tester with the given testing configuration
     tester = Tester(config)
-    count_parameters(tester.model)
+
+    # if testing is a model testing
+    if config.testing.mode == "model":
+        count_parameters(tester.model)
 
     # run the test
     tester.test()
@@ -142,3 +193,4 @@ def main(config: DictConfig):
 
 if __name__ == "__main__":
     main()
+    

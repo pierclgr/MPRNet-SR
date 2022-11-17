@@ -1,12 +1,15 @@
 import cv2
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 import numpy as np
+import torch
 
 
 def compute_metrics(hrs, srs):
     # convert the two batches from rgb to YCrCb
     hrs = np.asarray([cv2.cvtColor(hr, cv2.COLOR_RGB2YCR_CB) for hr in hrs])
     srs = np.asarray([cv2.cvtColor(sr, cv2.COLOR_RGB2YCR_CB) for sr in srs])
+
+    print
 
     # get only the Y channels of the batches
     hrs = hrs[:, :, :, 0]
