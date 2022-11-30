@@ -7,6 +7,7 @@ from src.augmentations import random_crop, random_90_rotation, random_horizontal
 import torchvision.transforms as T
 import numpy as np
 import cv2
+from PIL import Image
 
 cv2.setNumThreads(0)
 
@@ -276,7 +277,8 @@ class TestDataset(data.Dataset):
             output_width = width * self.scale
 
             # rescale the hr image to the SR output size
-            image = cv2.resize(image, dsize=(output_width, output_height), interpolation=cv2.INTER_CUBIC)
+            image = Image.fromarray(image)
+            image = np.asarray(image.resize((output_width, output_height), Image.Resampling.BICUBIC))
         else:
             # just compute the actual rounded height
             height = height // self.scale
@@ -285,18 +287,21 @@ class TestDataset(data.Dataset):
         # apply the degradation module
         if self.degradation == "bicubic":
             # if bicubic, just apply a bicubic downsampling to the image
-            degradated_image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+            degradated_image = Image.fromarray(image)
+            degradated_image = np.asarray(degradated_image.resize((width, height), Image.Resampling.BICUBIC))
 
         elif self.degradation == "blur_down":
             # if blur down, first apply a gaussian blur with 7x7 kernel and sigma 1.6 to the image
             degradated_image = cv2.GaussianBlur(image, ksize=(7, 7), sigmaX=1.6)
 
             # then, resize the image with bicubic downsampling
-            degradated_image = cv2.resize(degradated_image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+            degradated_image = Image.fromarray(image)
+            degradated_image = np.asarray(degradated_image.resize((width, height), Image.Resampling.BICUBIC))
 
         elif self.degradation == "down_noise":
             # if down noise, first resize the image with bicubic downsampling
-            degradated_image = cv2.resize(image, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+            degradated_image = Image.fromarray(image)
+            degradated_image = np.asarray(degradated_image.resize((width, height), Image.Resampling.BICUBIC))
 
             # get the height and width of the image
             height = degradated_image.shape[0]

@@ -12,7 +12,8 @@ from tqdm.auto import tqdm
 from src.metrics import compute_metrics
 import hydra
 import pprint
-import cv2
+import matplotlib.pyplot as plt
+from PIL import Image
 
 
 class Tester:
@@ -70,8 +71,20 @@ class Tester:
             upscaled_height = int(height * scale)
             upscaled_width = int(width * scale)
 
-            # upscale the image width bicubic & append it to the batch of upscaled images
-            upscaled_image = cv2.resize(image, dsize=(upscaled_width, upscaled_height), interpolation=cv2.INTER_CUBIC)
+            # image is currently in range 0-1 due to DataLoader, so to upscale it using PIL we need to 
+            # convert it to range 0-255
+            image_255 = image * 255
+            image_255 = image_255.astype(np.uint8)
+            
+            # upscale the image width bicubic
+            upscaled_image = Image.fromarray(image_255)
+            upscaled_image = np.asarray(upscaled_image.resize((upscaled_width, upscaled_height), Image.Resampling.BICUBIC))
+
+            # restore 0-1 interval
+            upscaled_image = upscaled_image / 255
+            upscaled_image = upscaled_image.astype(np.float32)
+
+            # append to the batch of upscaled images
             upscaled.append(upscaled_image)
         
         # convert the list of upscaled to numpy array and return
