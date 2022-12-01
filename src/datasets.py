@@ -295,7 +295,7 @@ class TestDataset(data.Dataset):
             degradated_image = cv2.GaussianBlur(image, ksize=(7, 7), sigmaX=1.6)
 
             # then, resize the image with bicubic downsampling
-            degradated_image = Image.fromarray(image)
+            degradated_image = Image.fromarray(degradated_image)
             degradated_image = np.asarray(degradated_image.resize((width, height), Image.Resampling.BICUBIC))
 
         elif self.degradation == "down_noise":
